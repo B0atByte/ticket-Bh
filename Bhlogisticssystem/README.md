@@ -69,6 +69,14 @@ ACCEPTED -> IN_TRANSIT
 IN_TRANSIT -> DELIVERED
 ```
 
+## แจ้งปัญหา (Report Issue)
+
+ทุกหน้าในระบบมีปุ่ม "แจ้งปัญหา" ลอยอยู่มุมซ้ายล่าง (`frontend/src/components/ReportButton.tsx`) ให้ผู้ใช้กดแจ้งปัญหาที่เจอได้ทันที โดยไม่จำเป็นต้อง login
+
+- Frontend ส่งคำอธิบายปัญหาพร้อม path ของหน้าปัจจุบันไปที่ `POST /api/issues`
+- Backend (`backend/src/routes/issues.ts`) validate ข้อมูล บันทึกลงตาราง `Issue` และแนบชื่อ/บทบาทผู้แจ้งอัตโนมัติถ้ามี login (JWT)
+- ถ้าตั้งค่า `DISCORD_WEBHOOK_URL` ไว้ ระบบจะส่งแจ้งเตือนเข้า Discord ทันทีที่มีการแจ้งปัญหาใหม่ (ถ้าไม่ตั้งค่า ระบบจะข้ามขั้นตอนนี้ไปเงียบๆ ไม่ error)
+
 ## วิธีรัน Development
 
 ### 1. Start database
@@ -121,7 +129,10 @@ FRONTEND_URL="http://localhost:5173"
 PORT=3000
 UPLOAD_DIR="./uploads"
 BACKEND_URL="http://localhost:3000"
+DISCORD_WEBHOOK_URL=""
 ```
+
+`DISCORD_WEBHOOK_URL` ใช้สำหรับส่งแจ้งเตือนเข้า Discord เมื่อมีคนกดปุ่ม "แจ้งปัญหา" (ไม่บังคับ ปล่อยว่างได้)
 
 ห้าม commit ไฟล์ `.env` เพราะมี secret และข้อมูลเชื่อมต่อฐานข้อมูล
 
