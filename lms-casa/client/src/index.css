@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SweetAlert2 — force above all overlays */
+.swal2-container {
+  z-index: 99999 !important;
+}
+
+@layer base {
+  :root {
+    /* ── Quiet palette (2026 redesign: white / neutral / casa green accent) ── */
+    --background:         0  0% 100%;   /* pure white canvas          */
+    --foreground:         0  0% 12%;    /* #1F1F1F matte black        */
+
+    --card:               0  0% 100%;   /* #FFFFFF pure white         */
+    --card-foreground:    0  0% 12%;
+
+    --popover:            0  0% 100%;
+    --popover-foreground: 0  0% 12%;
+
+    --primary:          160 65% 30%;    /* #1B7E5D casa green         */
+    --primary-foreground: 0  0% 100%;
+
+    --secondary:          0  0% 96%;    /* quiet neutral surface      */
+    --secondary-foreground: 0 0% 12%;
+
+    --muted:              0  0% 96%;    /* neutral-100 surface        */
+    --muted-foreground:   0  0% 38%;    /* neutral gray (readable)    */
+
+    --accent:             0  0% 96%;    /* neutral hover surface      */
+    --accent-foreground:  0  0% 12%;
+
+    --destructive:        0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:             0  0% 90%;    /* soft neutral border        */
+    --input:              0  0% 89%;
+    --ring:             160 65% 30%;    /* casa green focus ring      */
+
+    --radius: 0rem;
+  }
+
+  .dark {
+    --background:       165 20%  7%;
+    --foreground:       150 15% 92%;
+    --card:             165 18% 10%;
+    --card-foreground:  150 15% 92%;
+    --popover:          165 18% 10%;
+    --popover-foreground:150 15% 92%;
+    --primary:          155 45% 60%;
+    --primary-foreground: 0  0% 10%;
+    --secondary:        160 12% 17%;
+    --secondary-foreground:150 15% 92%;
+    --muted:            160 12% 17%;
+    --muted-foreground: 150  8% 62%;
+    --accent:           160 12% 17%;
+    --accent-foreground:150 15% 92%;
+    --destructive:        0 62% 40%;
+    --destructive-foreground:150 15% 92%;
+    --border:           160 12% 20%;
+    --input:            160 12% 20%;
+    --ring:             155 45% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    @apply tracking-tight;
+    font-feature-settings: 'kern' 1;
+  }
+}
+
+@layer components {
+  /* ── Luxury Card ── */
+  .card-luxury {
+    @apply bg-card border border-border shadow-warm-sm
+           transition-shadow duration-250 hover:shadow-warm;
+  }
+
+  /* ── Premium Glass Panel ── */
+  .glass-warm {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(201,232,218,0.45);
+  }
+
+  /* ── Luxury Divider ── */
+  .divider-warm {
+    @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  /* ── Stat Card ── */
+  .stat-card {
+    @apply bg-card border border-border p-5 shadow-warm-sm
+           transition-all duration-250 hover:shadow-warm hover:-translate-y-0.5;
+  }
+
+  /* ── Badge Luxury ── */
+  .badge-warm {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium
+           bg-cafe-foam text-cafe-green border border-cafe-mint/60;
+  }
+
+  /* ── Heading display (Cormorant) ── */
+  .display-heading {
+    @apply font-serif text-foreground;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  /* ── Input luxury ── */
+  .input-luxury {
+    @apply w-full border border-input bg-card px-4 py-2.5 text-sm text-foreground
+           placeholder:text-muted-foreground
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-ring
+           hover:border-muted-foreground/40;
+  }
+
+  /* ── Scrollbar warm ── */
+  .scrollbar-warm::-webkit-scrollbar { width: 4px; }
+  .scrollbar-warm::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-warm::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+  .scrollbar-warm::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  /* Smooth page entrance */
+  .animate-page-in {
+    animation: fade-in 0.35s cubic-bezier(0.4,0,0.2,1) both;
+  }
+}

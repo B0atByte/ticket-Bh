@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/build
+# Secrets — exclude both root and nested .env, but keep the example template
+.env
+**/.env
+!.env.example
+*service-account*.json
+shopee-service-account.json
+**/*.local
+Agents
+.git
+npm-debug.log*

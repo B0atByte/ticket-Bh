@@ -1,0 +1,4 @@
+interface:
+  display_name: "Universal Project Engineering"
+  short_description: "Reusable engineering workflow for any project"
+  default_prompt: "Use $universal-project-engineering to work on this project with safe, professional, project-aware engineering practices."

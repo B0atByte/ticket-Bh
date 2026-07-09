@@ -1,0 +1,27 @@
+# ── dependencies & build output ─────────────────────────
+node_modules/
+dist/
+build/
+*.local
+npm-debug.log*
+.DS_Store
+
+# ── secrets — NEVER commit ──────────────────────────────
+.env
+.env.*
+!.env.example
+*service-account*.json
+shopee-service-account.json
+
+# ── TLS certs / private keys (dev self-signed live here) ─
+certs/
+*.pem
+*.key
+
+# ── customer PII / runtime artifacts ────────────────────
+backups/
+uploads/
+*.xlsx
+
+# ── local agent / editor config ─────────────────────────
+.claude/

@@ -1,0 +1,11 @@
+# ไฟล์ฐานข้อมูล — ห้าม commit (มีข้อมูลจริง)
+*.sqlite
+*.sqlite3
+*.db
+
+# Claude Code local settings
+.claude/
+
+# OS / editor
+Thumbs.db
+.DS_Store

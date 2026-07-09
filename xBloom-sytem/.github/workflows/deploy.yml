@@ -1,0 +1,38 @@
+name: Deploy to VPS
+
+# Auto-deploys on every push to main, or run manually from the Actions tab.
+# The VPS builds the images itself (docker compose), so nothing is built here —
+# this job only SSHes in, pulls the new code, and recreates the containers.
+#
+# Required GitHub repo Secrets (Settings → Secrets and variables → Actions):
+#   VPS_HOST     public IP or hostname of the server
+#   VPS_USER     ssh user (e.g. deploy)
+#   VPS_SSH_KEY  private SSH key (the matching public key is in the server's authorized_keys)
+#   VPS_PATH     absolute path of the cloned repo on the server (e.g. /opt/xbloom)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.VPS_PATH }}"
+            git pull --ff-only
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps

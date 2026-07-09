@@ -1,0 +1,175 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  email     String   @unique
+  role      Role
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resetToken       String?  @unique
+  resetTokenExpiry DateTime?
+
+  requests  PurchaseRequest[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+enum Role {
+  owner
+  employee
+  purchasing
+  accounting
+  itsupport
+}
+
+model PurchaseRequest {
+  id            String        @id @default(cuid())
+  reqNo         String        @unique
+  title         String
+  reason        String?       @db.Text
+  category      String
+  categories    String        @db.Text
+  totalAmount   Float
+  vatAmount     Float?
+  supplierName  String
+  supplierName2 String?
+  paymentMethod PaymentMethod
+  paymentTiming PaymentTiming
+  orderDate     String
+  deliveryDate  String
+  dueDate       String
+  contactName   String
+  signedDate    String
+  status        RequestStatus @default(pending)
+  notes         String?       @db.Text
+  prNo          String?
+  poNo          String?
+  requestFile   String?   @db.Text
+  prFile        String?   @db.Text
+  poFile        String?   @db.Text
+  transferRef   String?
+  transferDate  String?
+  transferFile  String?   @db.Text
+  deliveryNote  String?   @db.Text
+  taxInvoice    String?   @db.Text
+  receivedAt      String?
+  branch          String   @default("HQ")
+  requestPhotos   String?  @db.Text
+  productPhotos   String?  @db.Text
+  createdBy     String
+  createdByName String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  items   PurchaseItem[]
+  creator User           @relation(fields: [createdBy], references: [id])
+
+  @@index([status])
+  @@index([createdBy])
+  @@index([updatedAt])
+  @@index([dueDate])
+  @@map("purchase_requests")
+}
+
+enum PaymentMethod {
+  bank
+  cash
+  transfer
+}
+
+enum PaymentTiming {
+  before
+  after
+}
+
+enum RequestStatus {
+  pending
+  purchasing
+  accounting
+  transferred
+  received
+  rejected
+}
+
+model PurchaseItem {
+  id           String  @id @default(cuid())
+  code         String
+  name         String
+  qty          Float
+  unit         String
+  price        Float
+  itemNote     String? @default("")
+  externalLink String? @db.Text
+
+  requestId String
+  request   PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_items")
+}
+
+model Settings {
+  id           String   @id @default("singleton")
+  siteName     String   @default("Casa Lapin")
+  siteSubtitle String   @default("ระบบขอซื้อสินค้า")
+  logoUrl      String?  @db.Text
+  updatedAt    DateTime @updatedAt
+  updatedBy    String?
+  updatedByName String?
+
+  discordWebhook        String?  @db.Text
+  discordOnNewRequest   Boolean  @default(true)
+  discordOnPurchasing   Boolean  @default(true)
+  discordOnAccounting   Boolean  @default(true)
+  discordOnTransferred  Boolean  @default(true)
+  discordOnRejected     Boolean  @default(true)
+  discordOnReceived     Boolean  @default(true)
+  discordOnLogin        Boolean  @default(false)
+  discordOnLogout       Boolean  @default(false)
+  discordOnPasswordReset Boolean @default(false)
+  discordSecurityWebhook  String?  @db.Text
+  discordSecurityChannelId String?
+  discordReportEnabled  Boolean  @default(false)
+  discordReportTime     String   @default("08:00")
+  discordBotToken       String?  @db.Text
+  discordChannelId      String?
+  discordRolePerms      String?  @db.Text
+
+  branches     String?  @db.Text
+
+  smtpHost     String?
+  smtpPort     Int?
+  smtpSecure   Boolean  @default(false)
+  smtpUser     String?
+  smtpPass     String?  @db.Text
+  smtpFrom     String?
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  userName  String
+  action    String
+  module    String
+  detail    String   @db.Text
+  ip        String?
+  timestamp DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}

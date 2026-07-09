@@ -1,0 +1,101 @@
+### xBloom API — example requests (VS Code REST Client / IntelliJ HTTP)
+@base = http://localhost:8080
+# After running "Login", paste the token here:
+@token = PASTE_TOKEN
+
+### Health
+GET {{base}}/health
+
+### Login (Admin / 0001)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "name": "Admin", "pin": "0001" }
+
+### Who am I
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+### Register a warranty (public)
+POST {{base}}/register
+Content-Type: application/json
+
+{
+  "serial": "XB-9001",
+  "product": "xBloom Studio",
+  "purchaseDate": "2025-06-01",
+  "name": "ทดสอบ ลูกค้า",
+  "phone": "0801112222",
+  "email": "test@example.com",
+  "postal": "10110"
+}
+
+### Check coverage (public)
+GET {{base}}/coverage/XB-9001
+
+### Create a ticket (public)
+POST {{base}}/tickets
+Content-Type: application/json
+
+{
+  "serial": "XB-0001",
+  "name": "สมชาย",
+  "phone": "0812345678",
+  "issueType": "ไม่จ่ายน้ำ",
+  "description": "เปิดติดแต่ไม่จ่ายน้ำ",
+  "repairType": "warranty"
+}
+
+### Track a ticket (public — no internal notes)
+GET {{base}}/tickets/TK-20250601-0001
+
+### List tickets (staff)
+GET {{base}}/tickets?status=new
+Authorization: Bearer {{token}}
+
+### Advance ticket status
+PATCH {{base}}/tickets/TK-20250601-0001/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "diagnose", "note": "เริ่มตรวจเครื่อง" }
+
+### Assign / notes
+PATCH {{base}}/tickets/TK-20250601-0001
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "assignedTo": "Tech", "staffNote": "นัดรับเครื่อง" }
+
+### Dashboard summary
+GET {{base}}/dashboard/summary
+Authorization: Bearer {{token}}
+
+### Machines (assets) — list store assets
+GET {{base}}/machines?assetType=store
+Authorization: Bearer {{token}}
+
+### Machine history
+GET {{base}}/machines/XB-0001/history
+Authorization: Bearer {{token}}
+
+### Products
+GET {{base}}/products
+Authorization: Bearer {{token}}
+
+### Export CSV
+GET {{base}}/export/csv?type=warranties
+Authorization: Bearer {{token}}
+
+### Activity log
+GET {{base}}/logs
+Authorization: Bearer {{token}}
+
+### Global claims (month filter)
+GET {{base}}/global-claims?month=2025-06
+Authorization: Bearer {{token}}
+
+### Delete warranty (admin re-auth via header)
+DELETE {{base}}/warranties/SOME-ID
+Authorization: Bearer {{token}}
+x-admin-pin: 0001

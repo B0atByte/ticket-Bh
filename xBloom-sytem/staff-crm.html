@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xBloom · BH — Support CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16181d;--ink-2:#4b5159;--ink-3:#8b9099;
+    --line:#e4e6e9;--line-2:#d7dade;--bg:#f5f6f7;--card:#fff;
+    --brand:#0d4d43;--brand-soft:#eef3f1;
+    --accent:#e7522b;--accent-soft:#fdf1ec;
+    --ok:#0f7a52;--ok-soft:#eaf4ef;
+    --wait:#b8791f;--wait-soft:#faf4e8;
+    --open:#b4452a;--open-soft:#fbf1ee;
+    --r:2px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"IBM Plex Sans Thai","Segoe UI",-apple-system,"Sarabun",Tahoma,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;letter-spacing:0;-webkit-font-smoothing:antialiased}
+  svg{display:block}
+  .ico{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:square;stroke-linejoin:miter}
+
+  /* top app bar */
+  .appbar{position:sticky;top:0;z-index:30;background:var(--card);border-bottom:1px solid var(--line-2)}
+  .appbar .inner{max-width:1240px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;gap:24px}
+  .brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+  .logo-bh{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--ink);background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--brand);font-weight:700;font-size:13px;letter-spacing:.5px}
+  .brand .meta small{display:block;font-size:10px;color:var(--ink-3);line-height:1.3;letter-spacing:.04em;text-transform:uppercase}
+  .brand .meta b{font-size:13px;font-weight:600}
+  .brand .vsep{width:1px;height:26px;background:var(--line-2);margin:0 4px}
+  .logo-xb{display:flex;align-items:center;gap:7px}
+  .logo-xb .dot{width:7px;height:7px;background:var(--accent)}
+  .logo-xb b{font-size:15px;font-weight:700;letter-spacing:-.01em}
+
+  .gsearch{flex:1;max-width:560px;margin:0 auto}
+  .gsearch .box{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line-2);border-radius:var(--r);padding:6px 15px;transition:border-color .15s,box-shadow .15s,background .15s}
+  .gsearch .box:focus-within{border-color:var(--ink);background:var(--card);box-shadow:0 0 0 2px rgba(22,24,29,.1)}
+  .gsearch .si{width:18px;height:18px;color:var(--ink-3);flex:0 0 auto}
+  .gsearch input{flex:1;border:none;outline:none;font-size:14px;font-family:inherit;padding:8px 0;background:transparent;color:var(--ink);letter-spacing:.01em}
+
+  .appbar .right{display:flex;align-items:center;gap:16px;flex:0 0 auto}
+  .status-dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ok)}
+  .status-dot i{width:7px;height:7px;background:var(--ok)}
+  .agent{display:flex;align-items:center;gap:9px}
+  .agent .av{width:32px;height:32px;border-radius:var(--r);background:var(--brand-soft);border:1px solid var(--line-2);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+  .agent .nm{font-size:12.5px;font-weight:600;line-height:1.2}
+  .agent .nm small{display:block;color:var(--ink-3);font-weight:400;font-size:10.5px}
+
+  /* page */
+  .page{max-width:1240px;margin:0 auto;padding:24px 28px 48px}
+  .crumb{display:flex;align-items:center;gap:8px;color:var(--ink-3);font-size:12.5px;margin-bottom:16px}
+  .crumb .ico{width:14px;height:14px;stroke-width:1.7}
+  .crumb b{color:var(--ink-2);font-weight:600}
+  .crumb .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start}
+
+  .panel{background:var(--card);border:1px solid var(--line-2);border-radius:var(--r)}
+  .panel-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .panel-head h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em}
+  .panel-head .count{font-size:11.5px;color:var(--ink-3)}
+
+  /* left: customer */
+  .cust-top{padding:20px;display:flex;gap:14px;align-items:flex-start}
+  .avatar{width:52px;height:52px;border-radius:var(--r);background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:0 0 auto;border:1px solid var(--line-2)}
+  .cust-top .info{flex:1;min-width:0}
+  .cust-top .info b{font-size:18px;font-weight:700;display:block;letter-spacing:-.02em}
+  .cust-top .info .sn{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;color:var(--ink-2);background:var(--bg);border:1px solid var(--line-2);display:inline-block;padding:2px 8px;border-radius:var(--r);margin-top:5px;letter-spacing:.03em}
+  .w-chip{margin:0 20px;display:flex;align-items:center;gap:11px;background:var(--ok-soft);border:1px solid var(--line-2);border-left:3px solid var(--ok);border-radius:var(--r);padding:11px 14px}
+  .w-chip .yr{font-size:20px;font-weight:700;color:var(--ok);letter-spacing:-.02em;line-height:1}
+  .w-chip .yt b{font-size:12.5px;font-weight:600;color:var(--ok);display:block}
+  .w-chip .yt small{font-size:11px;color:var(--ok);opacity:.75}
+
+  .meta-list{padding:18px 20px 4px}
+  .meta-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .meta-row:last-child{border-bottom:none}
+  .meta-row .mi{width:32px;height:32px;border-radius:var(--r);background:var(--bg);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--ink-2);flex:0 0 auto}
+  .meta-row .mi .ico{width:16px;height:16px}
+  .meta-row .mt{flex:1}
+  .meta-row .mt small{display:block;color:var(--ink-3);font-size:11px}
+  .meta-row .mt b{font-size:13.5px;font-weight:600}
+  .channel{display:inline-flex;align-items:center;gap:7px}
+  .channel .ic{width:18px;height:18px;border-radius:var(--r);background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+
+  .evidence{padding:14px 20px 20px;display:grid;grid-template-columns:1fr;gap:10px}
+  .ev-btn{border:1px solid var(--line-2);background:var(--card);border-radius:var(--r);padding:13px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;transition:border-color .15s,background .15s;font-family:inherit}
+  .ev-btn:hover{border-color:var(--ink)}
+  .ev-btn .ec{width:38px;height:38px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--line-2);color:var(--ink-2);flex:0 0 auto}
+  .ev-btn .et{flex:1}
+  .ev-btn .et b{display:block;font-size:13px;font-weight:600;line-height:1.25}
+  .ev-btn .et small{font-size:10.5px;color:var(--ink-3)}
+  .ev-btn .go{width:16px;height:16px;color:var(--ink-3)}
+  .ev-btn.dark{background:var(--ink);border-color:var(--ink)}
+  .ev-btn.dark:hover{opacity:.92}
+  .ev-btn.dark .ec{background:rgba(255,255,255,.12);border-color:transparent;color:#fff}
+  .ev-btn.dark .et b{color:#fff}
+  .ev-btn.dark .et small{color:rgba(255,255,255,.55)}
+  .ev-btn.dark .go{color:rgba(255,255,255,.5)}
+
+  /* right: timeline */
+  .timeline{padding:20px 22px 8px}
+  .log{position:relative;padding-left:34px;padding-bottom:18px}
+  .log:before{content:"";position:absolute;left:11px;top:26px;bottom:-2px;width:1.5px;background:var(--line-2)}
+  .log:last-child:before{display:none}
+  .log .node{position:absolute;left:0;top:2px;width:23px;height:23px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--card);border:1.5px solid var(--line-2);color:var(--ink-3)}
+  .log.s-ok .node{border-color:var(--ok);color:var(--ok)}
+  .log.s-wait .node{border-color:var(--wait);color:var(--wait)}
+  .log.s-open .node{border-color:var(--open);color:var(--open)}
+  .log-card{background:var(--card);border:1px solid var(--line-2);border-radius:var(--r);padding:15px 16px;transition:border-color .15s}
+  .log.s-ok .log-card{border-left:3px solid var(--ok)}
+  .log.s-wait .log-card{border-left:3px solid var(--wait)}
+  .log.s-open .log-card{border-left:3px solid var(--open)}
+  .log-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .who{display:flex;align-items:center;gap:10px}
+  .who .sa{width:30px;height:30px;border-radius:var(--r);background:var(--bg);border:1px solid var(--line-2);color:var(--ink-2);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .who b{font-size:14px;font-weight:600}
+  .who small{display:block;font-size:11px;color:var(--ink-3)}
+  .log-top .time{font-size:11.5px;color:var(--ink-3);text-align:right;flex:0 0 auto}
+  .topic{font-size:13.5px;margin:0 0 11px;color:var(--ink-2);max-width:62ch}
+  .topic .q{display:block;color:var(--ink-3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+  .status{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:var(--r)}
+  .status .ico{width:13px;height:13px;stroke-width:2}
+  .status.ok{background:var(--ok-soft);color:var(--ok)}
+  .status.wait{background:var(--wait-soft);color:var(--wait)}
+  .status.open{background:var(--open-soft);color:var(--open)}
+
+  .panel-foot{padding:6px 22px 20px}
+  .add-log{width:100%;background:var(--card);border:1px dashed var(--line-2);border-radius:var(--r);padding:13px;color:var(--ink-2);font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .15s;font-family:inherit}
+  .add-log:hover{border-color:var(--ink)}
+  .add-log .ico{width:17px;height:17px}
+
+  /* left column wrapper */
+  .col-left{display:flex;flex-direction:column;gap:20px}
+
+  /* channel badge */
+  .channel-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--bg);color:var(--ink-2)}
+  .channel-badge .ico{width:12px;height:12px;stroke-width:1.8}
+  .channel-badge.line{background:#eef7ef;border-color:#cfe6d2;color:#1f7a32}
+  .channel-badge.phone{background:var(--brand-soft);border-color:#cfe0db;color:var(--brand)}
+  .channel-badge.store{background:var(--accent-soft);border-color:#f1d3c8;color:var(--accent)}
+  .log-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto}
+
+  /* claim / ticket panel */
+  .claim-body{padding:18px 20px}
+  .tk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .tk-id{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:600;color:var(--ink-2);background:var(--bg);border:1px solid var(--line-2);padding:3px 9px;border-radius:var(--r)}
+  .tk-state{font-size:11px;font-weight:600;color:var(--wait);background:var(--wait-soft);border:1px solid var(--line-2);padding:3px 9px;border-radius:var(--r)}
+  .tk-state.ok{color:var(--ok);background:var(--ok-soft)}
+  .tk-state.warn{color:var(--wait);background:var(--wait-soft)}
+  .tk-state.done{color:var(--ink-2);background:var(--bg)}
+  .sym{font-size:13px;color:var(--ink-2);margin:0 0 16px}
+  .sym .q{display:block;color:var(--ink-3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+  .lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);margin-bottom:9px}
+  .decision{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .decision button{border:1px solid var(--line-2);background:var(--card);border-radius:var(--r);padding:11px 8px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:7px;text-align:left;transition:.15s}
+  .decision button .ico{width:15px;height:15px;stroke-width:1.9;flex:0 0 auto}
+  .decision button:hover{border-color:var(--ink-3)}
+  .decision button[aria-pressed="true"].good{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .decision button[aria-pressed="true"].bad{background:var(--open-soft);border-color:var(--open);color:var(--open)}
+  .decision button[aria-pressed="true"].warn{background:var(--wait-soft);border-color:var(--wait);color:var(--wait)}
+  .decision button[aria-pressed="true"].neutral{background:var(--bg);border-color:var(--ink);color:var(--ink)}
+
+  .route{margin-top:16px;border:1px solid var(--line-2);border-left:3px solid var(--brand);border-radius:var(--r);background:var(--bg);padding:14px 15px}
+  .route .rt-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .route .rt-title .ico{width:14px;height:14px;stroke:var(--brand);stroke-width:2}
+  .route .rt-item{display:flex;gap:10px;align-items:flex-start;padding:7px 0}
+  .route .rt-item:not(:last-child){border-bottom:1px solid var(--line)}
+  .route .rt-item .n{flex:0 0 auto;width:20px;height:20px;border-radius:var(--r);background:var(--card);border:1px solid var(--line-2);font-size:11px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .route .rt-item .tx{font-size:12.5px;color:var(--ink-2)}
+  .route .rt-item .tx b{color:var(--ink);font-weight:600}
+  .route .rt-team{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:var(--r);margin-left:6px}
+  .route .rt-team.bh{background:#e7f3ea;color:#1f7a32}
+  .route .rt-team.xb{background:var(--ink);color:#fff}
+
+  /* CCTV modal */
+  .modal{position:fixed;inset:0;z-index:100;background:rgba(12,13,16,.7);display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px)}
+  .modal.show{display:flex}
+  .video-box{width:100%;max-width:680px;background:#101216;border:1px solid #23262d;border-radius:var(--r);overflow:hidden}
+  .video-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #20232a}
+  .video-head .live{display:flex;align-items:center;gap:9px;color:#fff;font-size:13px;font-weight:600}
+  .video-head .live .rec{width:8px;height:8px;background:var(--accent);animation:blink 1.3s infinite}
+  @keyframes blink{50%{opacity:.3}}
+  .video-head button{background:rgba(255,255,255,.12);border:none;color:#fff;width:34px;height:34px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .video-head button .ico{stroke:#fff;width:18px;height:18px}
+  .video-screen{aspect-ratio:16/9;background:repeating-linear-gradient(45deg,#15171c,#15171c 12px,#191c22 12px,#191c22 24px);position:relative;display:flex;align-items:center;justify-content:center;color:#5b606b}
+  .video-screen .ovl{position:absolute;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.04em}
+  .video-screen .tl{top:13px;left:15px;color:#aeb3bd}
+  .video-screen .tr{top:13px;right:15px;color:#7fd3a8}
+  .video-screen .pkg{text-align:center;color:#6b7079}
+  .video-screen .pkg .ico{width:52px;height:52px;margin:0 auto;stroke-width:1.2;stroke:#4a4f59}
+  .video-screen .pkg small{display:block;margin-top:12px;font-size:12px}
+  .video-foot{padding:14px 18px;border-top:1px solid #20232a;color:#9398a2;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .video-foot .sn-match{display:inline-flex;align-items:center;gap:6px;background:#0e3a2c;color:#6ee7b7;padding:4px 10px;border-radius:var(--r);font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:11px;font-weight:600}
+  .video-foot .sn-match .ico{width:12px;height:12px;stroke:#6ee7b7;stroke-width:2.2}
+
+  /* log form modal */
+  .lm-box{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
+  .lm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .lm-head h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.02em}
+  .lm-head button{background:var(--bg);border:1px solid var(--line-2);color:var(--ink-2);width:32px;height:32px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .lm-head button .ico{width:17px;height:17px}
+  .lm-body{padding:18px 20px}
+  .lm-field{margin-bottom:16px}
+  .lm-field:last-child{margin-bottom:0}
+  .lm-field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+  .lm-field label .req{color:var(--accent)}
+  .lm-field input,.lm-field textarea{width:100%;border:1px solid var(--line-2);border-radius:var(--r);padding:12px 13px;font-size:14px;font-family:inherit;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+  .lm-field input:focus,.lm-field textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(22,24,29,.1)}
+  .lm-field textarea{resize:none;min-height:90px}
+  .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .seg button{border:1px solid var(--line-2);background:var(--card);border-radius:var(--r);padding:10px 6px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s}
+  .seg button .ico{width:14px;height:14px;stroke-width:2}
+  .seg button[aria-pressed="true"].ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .seg button[aria-pressed="true"].wait{background:var(--wait-soft);border-color:var(--wait);color:var(--wait)}
+  .seg button[aria-pressed="true"].open{background:var(--open-soft);border-color:var(--open);color:var(--open)}
+  .seg button[aria-pressed="true"].line{background:#eef7ef;border-color:#cfe6d2;color:#1f7a32}
+  .seg button[aria-pressed="true"].phone{background:var(--brand-soft);border-color:#cfe0db;color:var(--brand)}
+  .seg button[aria-pressed="true"].store{background:var(--accent-soft);border-color:#f1d3c8;color:var(--accent)}
+  .lm-foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--line)}
+  .lm-foot button{flex:1;border-radius:var(--r);padding:13px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .lm-foot .cancel{background:var(--card);border:1px solid var(--line-2);color:var(--ink-2)}
+  .lm-foot .cancel:hover{border-color:var(--ink)}
+  .lm-foot .save{background:var(--brand);border:1px solid var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
+  .lm-foot .save .ico{width:16px;height:16px;stroke:#fff}
+  .lm-foot .save:active{opacity:.92}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:120;display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ico{width:16px;height:16px;stroke:#fff;flex:0 0 auto}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .appbar .inner{gap:14px;padding:0 16px}
+    .gsearch{max-width:none}
+    .appbar .right .agent .nm{display:none}
+    .page{padding:18px 16px 40px}
+  }
+</style>
+</head>
+<body>
+
+  <header class="appbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo-bh">BH</div>
+        <div class="meta">
+          <small>Brewing Happiness</small>
+          <b>Support CRM</b>
+        </div>
+        <span class="vsep"></span>
+        <div class="logo-xb"><span class="dot"></span><b>xBloom</b></div>
+      </div>
+
+      <div class="gsearch">
+        <div class="box">
+          <svg class="ico si" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          <input type="text" id="searchInput" placeholder="ค้นหาด้วย SN, ชื่อลูกค้า หรือเบอร์โทร…" value="XB-7K4920-TH">
+        </div>
+      </div>
+
+      <div class="right">
+        <span class="status-dot"><i></i>ออนไลน์</span>
+        <div class="agent">
+          <span class="av">ปอ</span>
+          <span class="nm">ปองพล<small>Support Agent</small></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <div class="crumb">
+      <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      ผลการค้นหา <b class="mono">XB-7K4920-TH</b> · พบ 1 รายการ
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT -->
+      <div class="col-left">
+      <section class="panel">
+        <div class="cust-top">
+          <div class="avatar">สญ</div>
+          <div class="info">
+            <b>สมหญิง ใจดี</b>
+            <span class="sn">XB-7K4920-TH</span>
+          </div>
+        </div>
+
+        <div class="w-chip">
+          <span class="yr">2 ปี</span>
+          <div class="yt">
+            <b>สิทธิ์รับประกันใช้งานได้</b>
+            <small>ลงทะเบียนสำเร็จแล้ว</small>
+          </div>
+        </div>
+
+        <div class="meta-list">
+          <div class="meta-row">
+            <span class="mi"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="1"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="8" y1="3" x2="8" y2="6"/><line x1="16" y1="3" x2="16" y2="6"/></svg></span>
+            <div class="mt"><small>วันที่ซื้อ</small><b>12 มิ.ย. 2026</b></div>
+          </div>
+          <div class="meta-row">
+            <span class="mi"><svg class="ico" viewBox="0 0 24 24"><path d="M6 4h12l-1 6H7z"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/></svg></span>
+            <div class="mt"><small>ช่องทางที่ซื้อ</small><b class="channel"><span class="ic">S</span> Shopee</b></div>
+          </div>
+          <div class="meta-row">
+            <span class="mi"><svg class="ico" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
+            <div class="mt"><small>สินค้า</small><b>xBloom Studio</b></div>
+          </div>
+          <div class="meta-row">
+            <span class="mi"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+            <div class="mt"><small>เบอร์ติดต่อ</small><b>081-234-5678</b></div>
+          </div>
+          <div class="meta-row">
+            <span class="mi"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="m3 7 9 6 9-6"/></svg></span>
+            <div class="mt"><small>อีเมล</small><b>somying@email.com</b></div>
+          </div>
+        </div>
+
+        <div class="evidence">
+          <button class="ev-btn" onclick="showToast('เปิดรูปใบเสร็จที่ลูกค้าอัปโหลด')">
+            <span class="ec"><svg class="ico" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 19 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="16.5" x2="13" y2="16.5"/></svg></span>
+            <span class="et"><b>ใบเสร็จลูกค้า</b><small>รูปหลักฐานการซื้อ</small></span>
+            <svg class="ico go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+          <button class="ev-btn dark" onclick="openCCTV()">
+            <span class="ec"><svg class="ico" viewBox="0 0 24 24"><polygon points="22 7 16 11 22 15"/><rect x="2" y="6" width="14" height="12" rx="1"/></svg></span>
+            <span class="et"><b>วิดีโอแพ็คสินค้า</b><small>CCTV มุมสูง · ตรวจ SN</small></span>
+            <svg class="ico go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- claim / ticket -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>ผลวิเคราะห์ & การเคลม</h2>
+          <span class="count">Fixing · Claiming</span>
+        </div>
+        <div class="claim-body">
+          <div class="tk-top">
+            <span class="tk-id">TK-2406-0142</span>
+            <span class="tk-state" id="tkState">รอวิเคราะห์</span>
+          </div>
+          <p class="sym"><span class="q">อาการที่แจ้ง</span>เชื่อมต่อแอปไม่ติด สั่งชงผ่านสูตรไม่ได้ และเครื่องบดมีเสียงดังผิดปกติ</p>
+
+          <div class="lbl">ผลวิเคราะห์จากทีมเทคนิค</div>
+          <div class="decision" id="decision">
+            <button type="button" class="good" data-d="in" aria-pressed="false" onclick="pickDecision('in')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.9 8.2 7 9.5 4.1-1.3 7-5.1 7-9.5V6z"/><polyline points="9 11.5 11 13.5 15 9.5"/></svg>อยู่ในประกัน
+            </button>
+            <button type="button" class="bad" data-d="out" aria-pressed="false" onclick="pickDecision('out')">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".4" fill="currentColor" stroke-width="1.5"/></svg>นอกประกัน
+            </button>
+            <button type="button" class="warn" data-d="misuse" aria-pressed="false" onclick="pickDecision('misuse')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M12 3 3 19h18z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".4" fill="currentColor" stroke-width="1.5"/></svg>ลูกค้าใช้งานผิด
+            </button>
+            <button type="button" class="neutral" data-d="none" aria-pressed="false" onclick="pickDecision('none')">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>ไม่พบปัญหา
+            </button>
+          </div>
+
+          <div class="route" id="route" style="display:none">
+            <div class="rt-title">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h11"/><polyline points="13 8 17 12 13 16"/><line x1="19" y1="6" x2="19" y2="18"/></svg>
+              <span id="rtLabel">ปลายทางการเคลม</span>
+            </div>
+            <div id="rtSteps"></div>
+          </div>
+        </div>
+      </section>
+      </div>
+
+      <!-- RIGHT -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>ประวัติการติดต่อ (Interaction Log)</h2>
+          <span class="count">3 ครั้ง · ล่าสุดวันนี้ 14:05</span>
+        </div>
+
+        <div class="timeline" id="timeline">
+
+          <div class="log s-wait">
+            <div class="node">3</div>
+            <div class="log-card">
+              <div class="log-top">
+                <div class="who">
+                  <span class="sa">ปอ</span>
+                  <div><b>ปองพล</b><small>ครั้งที่ 3 · รับสาย</small></div>
+                </div>
+                <div class="log-meta">
+                  <span class="channel-badge line"><svg class="ico" viewBox="0 0 24 24"><path d="M21 11.5a8.5 7.5 0 1 1-3.6-6.1L21 4l-1 3.6a7 7 0 0 1 1 3.9z"/></svg>Line</span>
+                  <span class="time">วันนี้ · 14:05</span>
+                </div>
+              </div>
+              <p class="topic"><span class="q">เรื่องที่คุย</span>ลูกค้าแจ้งเครื่องเชื่อมต่อแอปไม่ติด สั่งชงผ่านสูตรในแอปไม่ได้ ส่งขั้นตอนรีเซ็ต Wi‑Fi และจับคู่แอปใหม่ให้แล้ว นัดติดตามผลพรุ่งนี้</p>
+              <span class="status wait"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>รออยู่ — รอลูกค้าลองจับคู่แอปใหม่</span>
+            </div>
+          </div>
+
+          <div class="log s-open">
+            <div class="node">2</div>
+            <div class="log-card">
+              <div class="log-top">
+                <div class="who">
+                  <span class="sa">นภ</span>
+                  <div><b>นภา</b><small>ครั้งที่ 2 · รับสาย</small></div>
+                </div>
+                <div class="log-meta">
+                  <span class="channel-badge store"><svg class="ico" viewBox="0 0 24 24"><path d="M4 9 5 4h14l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>หน้าร้าน CTW</span>
+                  <span class="time">22 มิ.ย. · 10:30</span>
+                </div>
+              </div>
+              <p class="topic"><span class="q">เรื่องที่คุย</span>แจ้งเครื่องบดมีเสียงดังผิดปกติและบดเมล็ดได้ไม่สม่ำเสมอ ตรวจเบื้องต้นแล้วยังไม่หาย ส่งต่อทีมเทคนิคตรวจชุดเฟืองบด</p>
+              <span class="status open"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h11"/><polyline points="13 8 17 12 13 16"/><line x1="19" y1="6" x2="19" y2="18"/></svg>ไม่จบ — ส่งต่อทีมเทคนิค</span>
+            </div>
+          </div>
+
+          <div class="log s-ok">
+            <div class="node">1</div>
+            <div class="log-card">
+              <div class="log-top">
+                <div class="who">
+                  <span class="sa">วร</span>
+                  <div><b>วรเดช</b><small>ครั้งที่ 1 · รับสาย</small></div>
+                </div>
+                <div class="log-meta">
+                  <span class="channel-badge phone"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>โทร</span>
+                  <span class="time">18 มิ.ย. · 16:12</span>
+                </div>
+              </div>
+              <p class="topic"><span class="q">เรื่องที่คุย</span>สอบถามการลงทะเบียนรับประกันและการตั้งค่าเริ่มต้น แนะนำการชงผ่านสูตรสำเร็จ การตั้งอัตราส่วนน้ำ (Ratio) และอุณหภูมิ ยืนยันสิทธิ์ 2 ปีเรียบร้อย</p>
+              <span class="status ok"><svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>จบแล้ว — ลูกค้าพอใจ</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="panel-foot">
+          <button class="add-log" onclick="openLog()">
+            <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+            บันทึกการติดต่อครั้งใหม่
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- CCTV -->
+  <div class="modal" id="cctv">
+    <div class="video-box">
+      <div class="video-head">
+        <div class="live"><span class="rec"></span>CCTV · จุดแพ็คสินค้า (มุมสูง)</div>
+        <button onclick="closeCCTV()"><svg class="ico" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+      </div>
+      <div class="video-screen">
+        <span class="ovl tl">CAM-04 · PACKING</span>
+        <span class="ovl tr">2026-06-12 13:42:08</span>
+        <div class="pkg">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+          <small>กำลังเล่นวิดีโอตอนแพ็ค</small>
+        </div>
+      </div>
+      <div class="video-foot">
+        ตรวจสอบ SN ตรงกับสินค้าที่ส่ง
+        <span class="sn-match"><svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>XB-7K4920-TH</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- new interaction log form -->
+  <div class="modal" id="logModal">
+    <div class="lm-box">
+      <div class="lm-head">
+        <h3>บันทึกการติดต่อครั้งใหม่</h3>
+        <button onclick="closeLog()"><svg class="ico" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+      </div>
+      <div class="lm-body">
+        <div class="lm-field">
+          <label>ผู้รับเรื่อง (Staff)</label>
+          <input type="text" id="lmStaff" value="ปองพล">
+        </div>
+        <div class="lm-field">
+          <label>ช่องทางติดต่อ</label>
+          <div class="seg" id="lmCh">
+            <button type="button" class="line" data-ch="line" aria-pressed="true" onclick="pickCh('line')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M21 11.5a8.5 7.5 0 1 1-3.6-6.1L21 4l-1 3.6a7 7 0 0 1 1 3.9z"/></svg>Line
+            </button>
+            <button type="button" class="phone" data-ch="phone" aria-pressed="false" onclick="pickCh('phone')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>โทร
+            </button>
+            <button type="button" class="store" data-ch="store" aria-pressed="false" onclick="pickCh('store')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M4 9 5 4h14l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/></svg>หน้าร้าน
+            </button>
+          </div>
+        </div>
+        <div class="lm-field">
+          <label>เรื่องที่คุย <span class="req">*</span></label>
+          <textarea id="lmTopic" placeholder="สรุปสิ่งที่ลูกค้าแจ้ง และสิ่งที่ดำเนินการ"></textarea>
+        </div>
+        <div class="lm-field">
+          <label>สถานะการแก้ไข <span class="req">*</span></label>
+          <div class="seg" id="lmSeg">
+            <button type="button" class="ok" data-status="ok" aria-pressed="false" onclick="pickStatus('ok')">
+              <svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>จบแล้ว
+            </button>
+            <button type="button" class="wait" data-status="wait" aria-pressed="true" onclick="pickStatus('wait')">
+              <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>รออยู่
+            </button>
+            <button type="button" class="open" data-status="open" aria-pressed="false" onclick="pickStatus('open')">
+              <svg class="ico" viewBox="0 0 24 24"><path d="M5 12h11"/><polyline points="13 8 17 12 13 16"/><line x1="19" y1="6" x2="19" y2="18"/></svg>ไม่จบ
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="lm-foot">
+        <button class="cancel" onclick="closeLog()">ยกเลิก</button>
+        <button class="save" onclick="saveLog()">
+          <svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>
+          บันทึก
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>
+    <span id="toastMsg"></span>
+  </div>
+
+<script>
+  function openCCTV(){document.getElementById('cctv').classList.add('show');}
+  function closeCCTV(){document.getElementById('cctv').classList.remove('show');}
+
+  /* ----- new interaction log ----- */
+  var logCount=3, curStatus='wait', curCh='line';
+  var STATUS={
+    ok:{cls:'s-ok',pill:'ok',label:'จบแล้ว',ico:'<polyline points="5 12.5 10 17.5 19 7"/>'},
+    wait:{cls:'s-wait',pill:'wait',label:'รออยู่',ico:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>'},
+    open:{cls:'s-open',pill:'open',label:'ไม่จบ',ico:'<path d="M5 12h11"/><polyline points="13 8 17 12 13 16"/><line x1="19" y1="6" x2="19" y2="18"/>'}
+  };
+  var CH={
+    line:{cls:'line',label:'Line',ico:'<path d="M21 11.5a8.5 7.5 0 1 1-3.6-6.1L21 4l-1 3.6a7 7 0 0 1 1 3.9z"/>'},
+    phone:{cls:'phone',label:'โทร',ico:'<path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z"/>'},
+    store:{cls:'store',label:'หน้าร้าน',ico:'<path d="M4 9 5 4h14l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/>'}
+  };
+
+  function openLog(){
+    document.getElementById('lmTopic').value='';
+    pickStatus('wait'); pickCh('line');
+    document.getElementById('logModal').classList.add('show');
+    setTimeout(function(){document.getElementById('lmTopic').focus();},120);
+  }
+  function closeLog(){document.getElementById('logModal').classList.remove('show');}
+
+  function pickStatus(s){
+    curStatus=s;
+    document.querySelectorAll('#lmSeg button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-status')===s ? 'true':'false');
+    });
+  }
+  function pickCh(c){
+    curCh=c;
+    document.querySelectorAll('#lmCh button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-ch')===c ? 'true':'false');
+    });
+  }
+
+  function saveLog(){
+    var staff=(document.getElementById('lmStaff').value||'พนักงาน').trim();
+    var topic=document.getElementById('lmTopic').value.trim();
+    if(!topic){document.getElementById('lmTopic').focus();showToast('กรุณากรอกเรื่องที่คุย');return;}
+    logCount++;
+    var st=STATUS[curStatus], ch=CH[curCh];
+    var initials=staff.replace(/\s/g,'').slice(0,2);
+    var html=''+
+      '<div class="log '+st.cls+'" style="opacity:0">'+
+        '<div class="node">'+logCount+'</div>'+
+        '<div class="log-card">'+
+          '<div class="log-top">'+
+            '<div class="who"><span class="sa">'+initials+'</span>'+
+              '<div><b>'+staff+'</b><small>ครั้งที่ '+logCount+'</small></div>'+
+            '</div>'+
+            '<div class="log-meta">'+
+              '<span class="channel-badge '+ch.cls+'"><svg class="ico" viewBox="0 0 24 24">'+ch.ico+'</svg>'+ch.label+'</span>'+
+              '<span class="time">วันนี้ · เมื่อสักครู่</span>'+
+            '</div>'+
+          '</div>'+
+          '<p class="topic"><span class="q">เรื่องที่คุย</span>'+escapeHtml(topic)+'</p>'+
+          '<span class="status '+st.pill+'"><svg class="ico" viewBox="0 0 24 24">'+st.ico+'</svg>'+st.label+'</span>'+
+        '</div>'+
+      '</div>';
+    var tl=document.getElementById('timeline');
+    tl.insertAdjacentHTML('afterbegin',html);
+    var added=tl.firstElementChild;
+    requestAnimationFrame(function(){added.style.transition='opacity .3s ease';added.style.opacity='1';});
+    closeLog();
+    showToast('บันทึกการติดต่อครั้งที่ '+logCount+' แล้ว');
+  }
+
+  /* ----- claim decision / routing ----- */
+  var DEC={
+    in:{state:'อยู่ในประกัน · กำลังเคลม',scls:'ok',label:'เคลมในประกัน — ไม่มีค่าใช้จ่าย',steps:[
+      'ระบบ ticket เปิดงานซ่อมอัตโนมัติ มอบหมาย<span class="rt-team bh">ช่าง BH</span>',
+      'ส่งรายการให้ <b>xBloom Global</b> ผ่าน Google Sheet<span class="rt-team xb">xBloom</span>',
+      'เปลี่ยน/ซ่อมเครื่องภายใน 3 วัน แล้วส่งกลับลูกค้า'
+    ]},
+    out:{state:'นอกประกัน',scls:'warn',label:'นอกประกัน — มีค่าซ่อม',steps:[
+      'แจ้งค่าซ่อมให้ลูกค้าทราบ',
+      'รอลูกค้ายืนยัน แล้ว<span class="rt-team bh">ช่าง BH</span>รับซ่อม (เก็บค่าซ่อม)'
+    ]},
+    misuse:{state:'ปิดเคส · ใช้งานผิด',scls:'done',label:'ลูกค้าใช้งานผิด — ส่งกลับพร้อมชี้แจง',steps:[
+      'ส่งเครื่องกลับลูกค้า พร้อมชี้แจงวิธีใช้งานที่ถูกต้อง'
+    ]},
+    none:{state:'ปิดเคส · ไม่พบปัญหา',scls:'done',label:'ไม่พบปัญหา — ส่งกลับพร้อมชี้แจง',steps:[
+      'ส่งเครื่องกลับลูกค้า พร้อมชี้แจงผลการตรวจสอบ'
+    ]}
+  };
+  function pickDecision(d){
+    document.querySelectorAll('#decision button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-d')===d ? 'true':'false');
+    });
+    var x=DEC[d];
+    var st=document.getElementById('tkState');
+    st.className='tk-state '+x.scls; st.textContent=x.state;
+    document.getElementById('rtLabel').textContent='ปลายทาง: '+x.label;
+    document.getElementById('rtSteps').innerHTML=x.steps.map(function(s,i){
+      return '<div class="rt-item"><span class="n">'+(i+1)+'</span><span class="tx">'+s+'</span></div>';
+    }).join('');
+    document.getElementById('route').style.display='block';
+  }
+
+  function escapeHtml(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  var toastT;
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent=msg;
+    t.classList.add('show');
+    clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show');},2400);
+  }
+</script>
+</body>
+</html>

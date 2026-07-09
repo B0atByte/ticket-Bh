@@ -1,0 +1,4 @@
+interface:
+  display_name: "Professional Safe Programming"
+  short_description: "Build software professionally and safely"
+  default_prompt: "Use $professional-safe-programming to implement this change with professional engineering quality and security checks."

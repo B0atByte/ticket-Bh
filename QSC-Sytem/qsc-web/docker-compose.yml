@@ -1,0 +1,25 @@
+services:
+  # เว็บแอป PHP (เซิร์ฟเวอร์ในตัวของ PHP) + ฐานข้อมูล SQLite ในไฟล์เดียว
+  web:
+    image: php:8.3-cli-alpine
+    container_name: qsc_web
+    working_dir: /var/www/html
+    command: >
+      php -d display_errors=0
+          -d date.timezone=Asia/Bangkok
+          -S 0.0.0.0:80 -t /var/www/html
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html          # โค้ด
+      - qsc_data:/data            # ไฟล์ฐานข้อมูล SQLite (อยู่นอก web root)
+    environment:
+      DB_PATH: /data/qsc.sqlite
+      TZ: Asia/Bangkok
+      PHP_CLI_SERVER_WORKERS: "4"
+      # แจ้งเตือน Discord — ใส่ webhook URL ของตัวเอง (ปล่อยว่างเพื่อปิด)
+      DISCORD_WEBHOOK: ""
+    restart: unless-stopped
+
+volumes:
+  qsc_data:

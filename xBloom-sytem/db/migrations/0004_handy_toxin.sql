@@ -1,0 +1,22 @@
+CREATE INDEX `log_target_idx` ON `activity_log` (`target`);--> statement-breakpoint
+CREATE INDEX `log_action_idx` ON `activity_log` (`action`);--> statement-breakpoint
+CREATE INDEX `log_timestamp_idx` ON `activity_log` (`timestamp`);--> statement-breakpoint
+CREATE INDEX `inter_serial_idx` ON `interactions` (`serial`);--> statement-breakpoint
+CREATE INDEX `machines_asset_type_idx` ON `machines` (`asset_type`);--> statement-breakpoint
+CREATE INDEX `machines_status_idx` ON `machines` (`status`);--> statement-breakpoint
+CREATE INDEX `machines_warranty_end_idx` ON `machines` (`warranty_end`);--> statement-breakpoint
+CREATE INDEX `tk_serial_idx` ON `tickets` (`serial`);--> statement-breakpoint
+CREATE INDEX `tk_status_idx` ON `tickets` (`status`);--> statement-breakpoint
+CREATE INDEX `tk_repair_type_idx` ON `tickets` (`repair_type`);--> statement-breakpoint
+CREATE INDEX `tk_created_idx` ON `tickets` (`created_at`);--> statement-breakpoint
+CREATE INDEX `tk_global_claim_idx` ON `tickets` (`global_claim_status`);--> statement-breakpoint
+CREATE INDEX `tk_assigned_idx` ON `tickets` (`assigned_to`);--> statement-breakpoint
+CREATE INDEX `tk_name_idx` ON `tickets` (`name`);--> statement-breakpoint
+CREATE INDEX `tk_phone_idx` ON `tickets` (`phone`);--> statement-breakpoint
+CREATE INDEX `warr_serial_idx` ON `warranties` (`serial`);--> statement-breakpoint
+CREATE INDEX `warr_name_idx` ON `warranties` (`name`);--> statement-breakpoint
+CREATE INDEX `warr_phone_idx` ON `warranties` (`phone`);--> statement-breakpoint
+CREATE INDEX `warr_status_idx` ON `warranties` (`status`);--> statement-breakpoint
+CREATE INDEX `warr_type_idx` ON `warranties` (`type`);--> statement-breakpoint
+CREATE INDEX `warr_expiry_idx` ON `warranties` (`expiry_date`);--> statement-breakpoint
+CREATE INDEX `warr_registered_idx` ON `warranties` (`registered_at`);

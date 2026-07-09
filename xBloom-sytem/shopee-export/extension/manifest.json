@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "xBloom — Shopee Order Export",
+  "version": "1.1.0",
+  "description": "อ่านข้อมูลออเดอร์จากหน้า Order Detail ของ Shopee Seller Center แล้วส่งเข้าระบบ xBloom (และ Google Sheet) ด้วยปุ่มเดียว",
+  "permissions": ["storage", "tabs", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://seller.shopee.co.th/*",
+    "https://seller.shopee.com/*",
+    "http://localhost:5173/*",
+    "http://127.0.0.1:5173/*",
+    "http://*/*"
+  ],
+  "background": { "service_worker": "src/background.js" },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "ตั้งค่า Shopee → Sheet"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://seller.shopee.co.th/*",
+        "https://seller.shopee.com/*"
+      ],
+      "js": ["src/config.js", "src/scraper.js", "src/content.js"],
+      "css": ["src/ui.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

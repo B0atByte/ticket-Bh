@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  KITCHEN
+  ADMIN
+  DRIVER
+  BRANCH
+}
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  ACCEPTED
+  IN_TRANSIT
+  DELIVERED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders        Order[]        @relation("KitchenOrders")
+  driverOrders  Order[]        @relation("DriverOrders")
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNo       String      @unique
+  status        OrderStatus @default(PENDING)
+  branchId      String
+  createdById   String
+  driverId      String?
+  notes         String?     @db.Text
+  initImageUrl  String?
+  pickupPhotos  Json        @default("[]")
+  dropoffPhotos Json        @default("[]")
+  signatureUrl  String?
+  deliveredAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  createdBy User        @relation("KitchenOrders", fields: [createdById], references: [id])
+  driver    User?       @relation("DriverOrders", fields: [driverId], references: [id])
+  items     OrderItem[]
+
+  @@index([status])
+  @@index([branchId])
+  @@index([driverId])
+  @@index([createdById])
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  name     String
+  quantity Float
+  unit     String
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Issue {
+  id           String   @id @default(cuid())
+  systemName   String
+  description  String   @db.Text
+  page         String?
+  reporterName String?
+  reporterRole String?
+  createdAt    DateTime @default(now())
+
+  @@index([systemName])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}

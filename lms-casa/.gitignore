@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+coverage/
+.vscode/
+.idea/
+*.tsbuildinfo
+.cache/
+.turbo/
+.next/
+.parcel-cache/
+playwright-report/
+test-results/
+
+# Prisma
+server/prisma/migrations/dev.db*
+
+# Uploads
+server/uploads/
+server/storage/
+
+# Docker volumes (local)
+data/
+
+# SonarQube scanner work dir + local reports
+.scannerwork/
+reports/

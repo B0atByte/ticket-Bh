@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-canvas text-ink;
+    font-family: "IBM Plex Sans Thai", "Segoe UI", system-ui, "Sarabun", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    letter-spacing: 0.02em;
+  }
+  .fade-in {
+    animation: fadeIn 0.26s ease both;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

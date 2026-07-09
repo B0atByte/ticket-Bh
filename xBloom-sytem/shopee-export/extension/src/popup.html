@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ตั้งค่า xBloom — Shopee Export</title>
+    <style>
+      body {
+        width: 320px;
+        margin: 0;
+        padding: 16px;
+        font: 14px/1.4 "IBM Plex Sans Thai", "Segoe UI", Tahoma, sans-serif;
+        color: #16181d;
+      }
+      h1 { font-size: 15px; margin: 0 0 12px; }
+      label { display: block; font-size: 12px; color: #6b7280; margin: 10px 0 4px; }
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border: 1px solid #d7dade;
+        border-radius: 6px;
+        font: inherit;
+      }
+      .row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+      button {
+        margin-top: 14px;
+        width: 100%;
+        padding: 9px;
+        background: #ee4d2d;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font: 600 14px/1 inherit;
+        cursor: pointer;
+      }
+      button.secondary {
+        margin-top: 8px;
+        background: #fff;
+        color: #16181d;
+        border: 1px solid #d7dade;
+      }
+      #status { margin-top: 10px; font-size: 12px; min-height: 16px; color: #0d7a4a; }
+      #test-result { margin-top: 8px; font-size: 12px; min-height: 16px; }
+      #test-result.ok { color: #0d7a4a; }
+      #test-result.bad { color: #c1352b; }
+    </style>
+  </head>
+  <body>
+    <h1>xBloom — Shopee Order Export</h1>
+
+    <label for="backendUrl">ที่อยู่ระบบ xBloom (Backend URL)</label>
+    <input id="backendUrl" type="text" placeholder="http://localhost:5173/api" />
+
+    <label for="apiKey">API Key (ถ้าตั้ง SHOPEE_API_KEY ไว้ที่ระบบ)</label>
+    <input id="apiKey" type="password" placeholder="ไม่บังคับ" />
+
+    <div class="row">
+      <input id="captureEnabled" type="checkbox" />
+      <label for="captureEnabled" style="margin: 0">บันทึก Screenshot ของออเดอร์</label>
+    </div>
+
+    <button id="save">บันทึกการตั้งค่า</button>
+    <button id="test" class="secondary" type="button">ทดสอบการเชื่อมต่อ</button>
+    <div id="status"></div>
+    <div id="test-result"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

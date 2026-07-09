@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17365D">
+<title>WaTerFruit QSC Branch Audit — Yes / No</title>
+<style>
+:root {
+  --navy:#17365D; --blue:#2F75B5; --teal:#2A7F7F; --green:#2E7D32;
+  --bg:#F4F7FB; --card:#FFFFFF; --text:#1F2937; --muted:#6B7280;
+  --line:#D7DEE8; --warn:#F59E0B; --danger:#C62828; --ok:#2E7D32;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",Tahoma,sans-serif;background:var(--bg);color:var(--text);padding-bottom:104px}
+header{background:linear-gradient(135deg,var(--navy),var(--blue));color:white;padding:22px 18px 28px;position:relative}
+header h1{margin:0;font-size:24px;line-height:1.25}
+header p{margin:7px 0 0;opacity:.9;font-size:14px}
+.container{max-width:900px;margin:-14px auto 0;padding:0 12px 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 5px 20px rgba(23,54,93,.07);margin-bottom:12px;overflow:hidden}
+.card-body{padding:16px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:640px){.grid{grid-template-columns:1fr} header h1{font-size:21px}}
+label{display:block;font-weight:700;font-size:13px;margin-bottom:6px}
+input,textarea{width:100%;border:1px solid #CBD5E1;border-radius:11px;padding:12px;font:inherit;background:white;color:var(--text)}
+input:focus,textarea:focus{outline:3px solid rgba(47,117,181,.16);border-color:var(--blue)}
+textarea{min-height:92px;resize:vertical}
+.section-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;background:#EEF4FA;cursor:pointer;gap:12px;border-bottom:1px solid var(--line)}
+.section-title{font-weight:800;font-size:16px}
+.section-meta{font-size:12px;color:var(--muted);white-space:nowrap}
+.section-body{padding:12px}
+.question{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:#fff}
+.question.unanswered{border-color:#E6A23C;background:#FFFCF2}
+.qtop{display:flex;gap:10px;align-items:flex-start}
+.code{background:#E8EEF6;color:var(--navy);font-weight:800;font-size:12px;border-radius:8px;padding:5px 8px;white-space:nowrap}
+.qtitle{font-size:14px;line-height:1.48;font-weight:650}
+.note{margin:7px 0 0 44px;font-size:12px;color:#B42318}
+.score-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.score-btn{min-width:46px;height:42px;border-radius:11px;border:1px solid #B9C6D6;background:#F8FAFC;color:#334155;font-weight:800;font-size:15px;cursor:pointer;transition:.12s}
+.score-btn:hover{transform:translateY(-1px);border-color:var(--blue)}
+.score-btn.selected{background:var(--navy);color:white;border-color:var(--navy);box-shadow:0 3px 10px rgba(23,54,93,.22)}
+.score-btn.full{border-color:#8BC49A}
+.score-btn.zero{border-color:#E6A0A0}
+.score-btn.yes{border-color:#79B68A;background:#F0FAF3;color:#17652B;min-width:118px}
+.score-btn.no{border-color:#E6A0A0;background:#FFF5F5;color:#A61B1B;min-width:118px}
+.score-btn.yes.selected{background:#2E7D32;color:white;border-color:#2E7D32}
+.score-btn.no.selected{background:#C62828;color:white;border-color:#C62828}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
+.badge.excellent{background:#D9EAD3;color:#274E13}
+.badge.good{background:#E2F0D9;color:#38610D}
+.badge.fair{background:#FFF2CC;color:#7F6000}
+.badge.poor{background:#F4CCCC;color:#9C0006}
+.actions{display:flex;flex-wrap:wrap;gap:9px}
+button.action{border:0;border-radius:11px;padding:12px 15px;font:inherit;font-weight:800;cursor:pointer}
+.primary{background:var(--navy);color:white}
+.secondary{background:#E8EEF6;color:var(--navy)}
+.danger{background:#FDECEC;color:#A61B1B}
+.success{background:#DDF4E4;color:#17652B}
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:600px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+.metric{background:#F6F9FC;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.metric strong{display:block;font-size:20px;color:var(--navy)}
+.metric span{font-size:11px;color:var(--muted)}
+.sticky{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));z-index:20}
+.sticky-inner{max-width:900px;margin:auto;display:flex;align-items:center;gap:10px}
+.progress-wrap{flex:1}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px}
+.progress{height:9px;border-radius:999px;background:#E5E7EB;overflow:hidden}
+.progress > div{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));width:0;transition:.2s}
+.total-box{text-align:center;min-width:82px}
+.total-box strong{font-size:22px;color:var(--navy)}
+.total-box div{font-size:11px;color:var(--muted)}
+.history-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.history-main strong{display:block}
+.history-main small{color:var(--muted)}
+.history-score{text-align:right;white-space:nowrap}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:118px;transform:translateX(-50%);background:#172033;color:#fff;padding:11px 15px;border-radius:12px;z-index:50;opacity:0;pointer-events:none;transition:.2s;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+@media print {
+  .no-print,.sticky,.score-row,.actions{display:none!important}
+  body{padding-bottom:0;background:white}
+  .container{max-width:none;margin:0;padding:0}
+  .card{box-shadow:none;break-inside:avoid}
+  .section-body{display:block!important}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>WaTerFruit — QSC Branch Audit</h1>
+  <p>เลือก Yes / No จากมือถือ • Yes = คะแนนเต็มของข้อนั้น • No = 0 คะแนน</p>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <div style="background:#EEF7F0;border:1px solid #B7D8BF;border-radius:12px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.55">
+        <strong>วิธีให้คะแนน:</strong> เลือก <strong style="color:#17652B">Yes</strong> เมื่อผ่านครบตามเกณฑ์ เพื่อรับคะแนนเต็มของข้อนั้น
+        และเลือก <strong style="color:#A61B1B">No</strong> เมื่อไม่ผ่าน เพื่อให้คะแนน 0
+      </div>
+      <div class="grid">
+        <div><label>วันที่ตรวจ *</label><input id="auditDate" type="date"></div>
+        <div><label>Store / Branch *</label><input id="branch" placeholder="พิมพ์ชื่อสาขา"></div>
+        <div><label>MOD Name *</label><input id="modName" placeholder="ชื่อ MOD"></div>
+        <div><label>AM Name</label><input id="amName" placeholder="ชื่อ AM"></div>
+        <div><label>ผู้ตรวจ / Trainer *</label><input id="auditor" placeholder="ชื่อผู้ตรวจ"></div>
+      </div>
+      <div style="margin-top:12px"><label>หมายเหตุทั่วไป</label><textarea id="generalNote" placeholder="รายละเอียดเพิ่มเติม เช่น จุดที่ต้องแก้ไข หรือแผนติดตาม"></textarea></div>
+    </div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="card">
+    <div class="card-body">
+      <h3 style="margin-top:0">สรุปคะแนนปัจจุบัน</h3>
+      <div id="sectionSummary" class="summary-grid"></div>
+      <hr>
+      <div class="actions no-print">
+        <button class="action primary" onclick="saveAudit()">บันทึกผลตรวจ</button>
+        <button class="action secondary" onclick="copySummary()">คัดลอกสรุป</button>
+        <button class="action secondary" onclick="window.print()">พิมพ์ / บันทึก PDF</button>
+        <button class="action danger" onclick="resetForm()">เริ่มตรวจใหม่</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card no-print">
+    <div class="card-body">
+      <h3 style="margin-top:0">ประวัติผลตรวจบนเครื่องนี้</h3>
+      <div class="actions" style="margin-bottom:12px">
+        <button class="action success" onclick="exportCSV()">ดาวน์โหลด CSV</button>
+        <button class="action secondary" onclick="renderHistory()">รีเฟรชประวัติ</button>
+        <button class="action danger" onclick="clearHistory()">ล้างประวัติทั้งหมด</button>
+      </div>
+      <div id="history"></div>
+      <p class="small">ข้อมูลจะถูกเก็บในเบราว์เซอร์ของอุปกรณ์ที่ใช้งาน หากเปิดจากเครื่องอื่น ประวัติจะไม่ตามไปด้วย</p>
+    </div>
+  </div>
+</div>
+
+<div class="sticky no-print">
+  <div class="sticky-inner">
+    <div class="progress-wrap">
+      <div class="progress-label"><span id="answeredText">ตอบแล้ว 0/39</span><span id="gradeText">ยังไม่ครบ</span></div>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+    <div class="total-box"><strong id="totalScore">0</strong><div>/ 100 คะแนน</div></div>
+    <button class="action primary" onclick="saveAudit()">บันทึก</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const CRITERIA = [{"code": "Q01-Juice", "no": "1", "section": "Bar Coffee Station", "title": "มาตรฐานเครื่องดื่มเมนู Juice ต้องเป็นไปตามมาตรฐานตามสูตร", "max": 5, "note": "สุ่มเช็คเมนู"}, {"code": "Q01-Smoothie", "no": "1", "section": "Bar Coffee Station", "title": "มาตรฐานเครื่องดื่มเมนู Smoothie ต้องเป็นไปตามมาตรฐานตามสูตร", "max": 5, "note": "สุ่มเช็คเมนู"}, {"code": "Q01-Signature", "no": "1", "section": "Bar Coffee Station", "title": "มาตรฐานเครื่องดื่มเมนู Signature ต้องเป็นไปตามมาตรฐานตามสูตร", "max": 5, "note": "สุ่มเช็คเมนู"}, {"code": "Q02", "no": "2", "section": "Bar Coffee Station", "title": "ลำดับขั้นตอนและวิธีการทำเครื่องดื่มถูกต้อง", "max": 2, "note": ""}, {"code": "Q03", "no": "3", "section": "Bar Coffee Station", "title": "มีการ Check อุปกรณ์ให้อยู่ในสภาพดี ใช้งานได้ตามปกติ ไม่เสียหาย และเพียงพอต่อการใช้งาน เช่น เครื่องปั่น หม้อต้มน้ำร้อน Digital Scale ฟิลเตอร์เครื่องกรองน้ำ และอุปกรณ์ในบาร์", "max": 5, "note": ""}, {"code": "Q04", "no": "4", "section": "Bar Coffee Station", "title": "สินค้าและวัตถุดิบของแต่ละสถานีมีใช้อย่างเหมาะสม จัดเก็บถูกต้อง ไม่หมดอายุ ไม่มี Shot หรือ Over Stock และติดวันหมดอายุวัตถุดิบ", "max": 5, "note": "ตรวจสอบจากวัตถุดิบ"}, {"code": "Q05", "no": "5", "section": "Bar Coffee Station", "title": "ผ้าทุกผืนในบาร์อยู่ในสภาพใช้งานได้ ทำความสะอาดถูกต้อง ไม่มีกลิ่น ไม่แห้งหรือเปียกแฉะจนเกินไป", "max": 2, "note": ""}, {"code": "Q06", "no": "6", "section": "Bar Coffee Station", "title": "รักษาความสะอาดพื้นที่บริเวณที่ทำงานตามหลัก Clean as you go และเคลียร์บริเวณบาร์ให้สะอาด", "max": 2, "note": "ตรวจสอบจากทำเครื่องดื่มเสร็จ"}, {"code": "Q07", "no": "7", "section": "Bar Coffee Station", "title": "ใช้ที่ตักน้ำแข็งในการตักน้ำแข็งเท่านั้น และที่ตัก/ช่องตักน้ำแข็งต้องสะอาด ไม่มีคราบ", "max": 2, "note": ""}, {"code": "Q08", "no": "8", "section": "Bar Coffee Station", "title": "น้ำแข็งที่ใช้ต้องผลิตจากเครื่องทำน้ำแข็งเท่านั้น และมีเพียงพอต่อการขาย", "max": 2, "note": ""}, {"code": "Q09", "no": "9", "section": "Bar Coffee Station", "title": "การปฏิบัติงานด้านเครื่องดื่มถูกต้องตามมาตรฐาน Food hygiene and safety (ล้างมือ สวมถุงมือทั้งสองข้าง)", "max": 2, "note": "สุ่มเช็คพนักงานที่เข้างานในวัน"}, {"code": "Q10", "no": "10", "section": "Bar Coffee Station", "title": "ตู้เย็น Chiller 1-5 องศา / ตู้เย็น Freezer -16 ถึง -18 องศา และสภาพตู้เย็นต้องสะอาด", "max": 2, "note": ""}, {"code": "Q11", "no": "11", "section": "Call Order & Service Station", "title": "พนักงานบริการลูกค้าด้วยความสุภาพ ยิ้มแย้ม พร้อมให้บริการ ไม่เล่นโทรศัพท์ และปฏิบัติงานตามขั้นตอนการบริการ", "max": 5, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q12", "no": "12", "section": "Call Order & Service Station", "title": "พนักงานแนะนำเมนูเครื่องดื่ม Signature กับลูกค้า พร้อมแนะนำเพิ่มเติมสำหรับเมนูของหวานหรือแซนด์วิช", "max": 2, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q13", "no": "13", "section": "Call Order & Service Station", "title": "แจ้งลูกค้าให้ทราบจุดรับเครื่องดื่ม และขั้นตอนการตรวจสอบรายการเมนู", "max": 2, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q14", "no": "14", "section": "Call Order & Service Station", "title": "ขณะเรียกรับออเดอร์ มีการขอบคุณลูกค้าทุกครั้ง", "max": 2, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q15", "no": "15", "section": "Call Order & Service Station", "title": "พื้นที่บริเวณ POS, EDC และเครื่อง Grab ใช้งานได้ดี สะอาด เป็นระเบียบเรียบร้อย ไม่รก มีฝุ่นหรือเศษขยะ", "max": 2, "note": ""}, {"code": "Q16", "no": "16", "section": "Call Order & Service Station", "title": "พนักงานทุกคนแต่งกายถูกต้องตามแบบฟอร์มมาตรฐานที่กำหนด สะอาด เรียบร้อย (เสื้อ ผ้า หน้า ผม)", "max": 2, "note": ""}, {"code": "Q17", "no": "17", "section": "Call Order & Service Station", "title": "ทุก 10 นาที หรือทุกครั้งที่ว่าง สำหรับการ on floor ตรวจเช็คความเรียบร้อยภายนอก และสร้างปฏิสัมพันธ์ที่ดีกับลูกค้า", "max": 2, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q18", "no": "18", "section": "Call Order & Service Station", "title": "พนักงานทุกคนในร้านต้องสวมผ้ากันเปื้อนในขณะทำงาน", "max": 2, "note": ""}, {"code": "Q19", "no": "19", "section": "Food & Bakery Station", "title": "จัดเตรียมเมนูอาหารตาม SOP ทุกขั้นตอน และรูปลักษณ์สวยงามตามมาตรฐานที่กำหนดไว้", "max": 5, "note": ""}, {"code": "Q20", "no": "20", "section": "Food & Bakery Station", "title": "การปฏิบัติงานด้านอาหารถูกต้องตามมาตรฐาน Food hygiene and safety (ล้างมือ สวมถุงมือทั้งสองข้าง)", "max": 5, "note": ""}, {"code": "Q21", "no": "21", "section": "Food & Bakery Station", "title": "รายการอาหารต้องเสิร์ฟภายใน 10-15 นาที (กรณี Order มากต้องแจ้งเวลารอให้ลูกค้า)", "max": 5, "note": "สุ่มเช็คจากการบริการลูกค้า"}, {"code": "Q22", "no": "22", "section": "Food & Bakery Station", "title": "อุปกรณ์ทุกอย่างในครัวต้องสะอาด ไม่ชำรุด และอยู่ในสภาพพร้อมใช้งาน", "max": 2, "note": ""}, {"code": "Q23", "no": "23", "section": "Food & Bakery Station", "title": "วัตถุดิบต้องมีวันหมดอายุชัดเจนและไม่พบวัตถุดิบหมดอายุ (กรณีผักผลไม้ตรวจสอบว่าไม่เหี่ยวและแห้ง)", "max": 2, "note": "ตรวจสอบจากวัตถุดิบ"}, {"code": "Q24", "no": "24", "section": "Food & Bakery Station", "title": "วัตถุดิบทุกอย่างต้องมีใช้อย่างเหมาะสม ไม่ขาด Stock และไม่ Over stock", "max": 2, "note": "ตรวจสอบจากวัตถุดิบ"}, {"code": "Q25", "no": "25", "section": "Food & Bakery Station", "title": "เครื่องใช้ไฟฟ้าทุกประเภทต้องสะอาด และสภาพการใช้งานครบสมบูรณ์", "max": 2, "note": ""}, {"code": "Q26", "no": "26", "section": "Food & Bakery Station", "title": "ตู้เย็น Chiller 1-5 องศา / ตู้เย็น Freezer -16 ถึง -18 องศา และสภาพตู้เย็นต้องสะอาด", "max": 2, "note": ""}, {"code": "Q27", "no": "27", "section": "Food & Bakery Station", "title": "รักษาความสะอาดพื้นที่บริเวณที่ทำงานตามหลัก Clean as you go และเคลียร์บริเวณบาร์ให้สะอาด", "max": 2, "note": ""}, {"code": "Q28", "no": "28", "section": "Environment Station", "title": "ป้ายสื่อเมนู จอ TV สื่อเมนูหน้า POS และป้ายตั้งหน้าร้าน ติดครบ อยู่ในสภาพสวยงาม ไม่มีฝุ่น ภาพสีไม่ซีดจาง และป้ายสมบูรณ์", "max": 2, "note": ""}, {"code": "Q29", "no": "29", "section": "Environment Station", "title": "ตู้เฟอร์นิเจอร์เก็บของ ฟิลเตอร์ตู้เย็น ผนัง กระจก พัดลม และซิงค์ล้างจาน รวมถึงพื้นภายใน-ภายนอกและถังขยะ สะอาด ไม่มีคราบสกปรกและพร้อมใช้งาน", "max": 2, "note": ""}, {"code": "Q30", "no": "30", "section": "Environment Station", "title": "ห้องสต็อกและชั้นเก็บสต็อกจัดเก็บของเรียบร้อย สะอาด และโซนกินข้าวของพนักงานจัดเรียงเป็นระเบียบ", "max": 2, "note": ""}, {"code": "Q31", "no": "31", "section": "Environment Station", "title": "บริเวณเคาน์เตอร์การขายและสถานีการทำอาหาร/เครื่องดื่มสะอาด ไม่มีของส่วนตัวพนักงานวางปะปน และจัดเก็บเป็นระเบียบ", "max": 2, "note": ""}, {"code": "Q32", "no": "32", "section": "Environment Station", "title": "ตู้โชว์สินค้าและชั้นวางสินค้าสะอาด จัดวางสินค้าเป็นระเบียบ โชว์ป้ายสินค้าชัดเจน และมีจำนวนเหมาะสม", "max": 2, "note": ""}, {"code": "Q33", "no": "33", "section": "Environment Station", "title": "บ่อลักไขมันสะอาด ไม่มีกลิ่นเหม็น และต้องตักทุกวัน", "max": 1, "note": ""}, {"code": "Q34", "no": "34", "section": "Administration", "title": "คู่มือปฏิบัติงานของฝ่ายปฏิบัติการ / SOP อัปเดตให้เป็นปัจจุบัน", "max": 1, "note": ""}, {"code": "Q35", "no": "35", "section": "Administration", "title": "เอกสารรับในระบบ HQ / เอกสารรับตรง รับเข้าระบบให้เรียบร้อยและตรวจสอบจาก ณ วันปัจจุบัน", "max": 1, "note": ""}, {"code": "Q36", "no": "36", "section": "Administration", "title": "เอกสาร Petty Cash: กรณีค้างเบิกต้องมีให้ตรวจสอบ และกรณีเบิกต้องมีหลักฐานในการเบิก", "max": 1, "note": ""}, {"code": "Q37", "no": "37", "section": "Administration", "title": "Nimbly ต้องทำให้ครบถ้วน 100% ในระบบ ดูย้อนหลัง 1 เดือน", "max": 1, "note": ""}];
+const SECTION_MAX = Object.fromEntries([["Bar Coffee Station", 39], ["Call Order & Service Station", 19], ["Food & Bakery Station", 27], ["Environment Station", 11], ["Administration", 4]]);
+const scores = {};
+
+function todayLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+document.getElementById('auditDate').value = todayLocal();
+
+function grade(score) {
+  if (score >= 95) return ['Excellent','excellent'];
+  if (score >= 85) return ['Good','good'];
+  if (score >= 75) return ['Fair','fair'];
+  return ['Poor','poor'];
+}
+
+function renderSections() {
+  const host = document.getElementById('sections');
+  host.innerHTML = '';
+  Object.keys(SECTION_MAX).forEach((section, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const head = document.createElement('div');
+    head.className = 'section-head';
+    head.innerHTML = `<div class="section-title">${section}</div>
+      <div class="section-meta"><span id="meta-${slug(section)}">0/${SECTION_MAX[section]}</span> ▾</div>`;
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    if (idx > 0) body.style.display = 'none';
+    head.onclick = () => body.style.display = body.style.display === 'none' ? 'block' : 'none';
+
+    CRITERIA.filter(q => q.section === section).forEach(q => {
+      const box = document.createElement('div');
+      box.className = 'question unanswered';
+      box.id = 'box-' + q.code.replace(/[^a-zA-Z0-9]/g,'_');
+      const note = q.note ? `<div class="note">แนวทางตรวจ: ${q.note}</div>` : '';
+      const safeCode = q.code.replace(/'/g,"\\'");
+      const buttons = `
+        <button type="button" class="score-btn yes" data-code="${q.code}" data-score="${q.max}"
+          onclick="chooseScore('${safeCode}',${q.max},this)">Yes — ${q.max} คะแนน</button>
+        <button type="button" class="score-btn no" data-code="${q.code}" data-score="0"
+          onclick="chooseScore('${safeCode}',0,this)">No — 0 คะแนน</button>`;
+      box.innerHTML = `<div class="qtop"><span class="code">${q.code}</span><div class="qtitle">${q.title}</div></div>${note}
+        <div class="score-row">${buttons}</div>`;
+      body.appendChild(box);
+    });
+    card.appendChild(head); card.appendChild(body); host.appendChild(card);
+  });
+}
+
+function slug(text) { return text.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function chooseScore(code, score, btn) {
+  scores[code] = score;
+  const box = btn.closest('.question');
+  box.classList.remove('unanswered');
+  box.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  updateTotals();
+}
+
+function updateTotals() {
+  let total = 0, answered = 0;
+  const sectionScores = {};
+  Object.keys(SECTION_MAX).forEach(s => sectionScores[s] = 0);
+  CRITERIA.forEach(q => {
+    if (scores[q.code] !== undefined) {
+      answered++;
+      total += Number(scores[q.code]);
+      sectionScores[q.section] += Number(scores[q.code]);
+    }
+  });
+
+  document.getElementById('totalScore').textContent = total;
+  document.getElementById('answeredText').textContent = `ตอบแล้ว ${answered}/${CRITERIA.length}`;
+  document.getElementById('progressBar').style.width = `${answered/CRITERIA.length*100}%`;
+
+  const [g, cls] = grade(total);
+  document.getElementById('gradeText').innerHTML = answered === CRITERIA.length
+    ? `<span class="badge ${cls}">${g}</span>`
+    : `เหลือ ${CRITERIA.length-answered} ข้อ`;
+
+  Object.keys(SECTION_MAX).forEach(s => {
+    const node = document.getElementById('meta-' + slug(s));
+    if (node) node.textContent = `${sectionScores[s]}/${SECTION_MAX[s]}`;
+  });
+
+  const summary = document.getElementById('sectionSummary');
+  summary.innerHTML = Object.keys(SECTION_MAX).map(s =>
+    `<div class="metric"><strong>${sectionScores[s]}/${SECTION_MAX[s]}</strong><span>${s}</span></div>`
+  ).join('') + `<div class="metric"><strong>${total}/100</strong><span>รวม • ${g}</span></div>`;
+}
+
+function requiredMetaOK() {
+  const ids = ['auditDate','branch','modName','auditor'];
+  const missing = ids.filter(id => !document.getElementById(id).value.trim());
+  if (missing.length) {
+    toast('กรุณากรอก วันที่ สาขา MOD และผู้ตรวจให้ครบ');
+    document.getElementById(missing[0]).focus();
+    return false;
+  }
+  return true;
+}
+
+function saveAudit() {
+  if (!requiredMetaOK()) return;
+  const unanswered = CRITERIA.filter(q => scores[q.code] === undefined);
+  if (unanswered.length) {
+    toast(`ยังไม่ได้ให้คะแนน ${unanswered.length} ข้อ`);
+    const box = document.getElementById('box-' + unanswered[0].code.replace(/[^a-zA-Z0-9]/g,'_'));
+    box.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  const sectionScores = {};
+  Object.keys(SECTION_MAX).forEach(s => sectionScores[s] = 0);
+  let total = 0;
+  CRITERIA.forEach(q => {
+    total += Number(scores[q.code]);
+    sectionScores[q.section] += Number(scores[q.code]);
+  });
+  const [g] = grade(total);
+  const audit = {
+    id: Date.now(),
+    savedAt: new Date().toISOString(),
+    auditDate: document.getElementById('auditDate').value,
+    branch: document.getElementById('branch').value.trim(),
+    modName: document.getElementById('modName').value.trim(),
+    amName: document.getElementById('amName').value.trim(),
+    auditor: document.getElementById('auditor').value.trim(),
+    note: document.getElementById('generalNote').value.trim(),
+    total, grade:g, sectionScores,
+    scores: Object.fromEntries(CRITERIA.map(q => [q.code, scores[q.code]]))
+  };
+  const history = loadHistory();
+  history.unshift(audit);
+  localStorage.setItem('qsc_audits_v1', JSON.stringify(history));
+  renderHistory();
+  toast(`บันทึกแล้ว: ${audit.branch} • ${total} คะแนน • ${g}`);
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('qsc_audits_v1') || '[]'); }
+  catch(e) { return []; }
+}
+
+function renderHistory() {
+  const list = loadHistory();
+  const host = document.getElementById('history');
+  if (!list.length) {
+    host.innerHTML = '<p class="small">ยังไม่มีประวัติผลตรวจ</p>';
+    return;
+  }
+  host.innerHTML = list.map(a => {
+    const [_, cls] = grade(a.total);
+    return `<div class="history-item">
+      <div class="history-main"><strong>${escapeHtml(a.branch)}</strong>
+      <small>${formatDate(a.auditDate)} • ผู้ตรวจ ${escapeHtml(a.auditor)} • MOD ${escapeHtml(a.modName)}</small></div>
+      <div class="history-score"><strong>${a.total}/100</strong><br><span class="badge ${cls}">${a.grade}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(s) {
+  if (!s) return '';
+  const p=s.split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : s;
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function resetForm() {
+  if (!confirm('เริ่มตรวจใหม่และล้างคะแนนที่กำลังกรอกหรือไม่?')) return;
+  Object.keys(scores).forEach(k => delete scores[k]);
+  document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.question').forEach(q => q.classList.add('unanswered'));
+  ['branch','modName','amName','auditor','generalNote'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('auditDate').value=todayLocal();
+  updateTotals();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function clearHistory() {
+  if (!confirm('ล้างประวัติผลตรวจทั้งหมดบนเครื่องนี้หรือไม่?')) return;
+  localStorage.removeItem('qsc_audits_v1');
+  renderHistory(); toast('ล้างประวัติแล้ว');
+}
+
+function csvCell(v) { return '"' + String(v ?? '').replace(/"/g,'""') + '"'; }
+
+function exportCSV() {
+  const list = loadHistory();
+  if (!list.length) return toast('ยังไม่มีข้อมูลสำหรับดาวน์โหลด');
+  const headers = ['เวลาบันทึก','วันที่ตรวจ','สาขา','MOD','AM','ผู้ตรวจ','คะแนนรวม','Grade',
+    ...Object.keys(SECTION_MAX), 'หมายเหตุ', ...CRITERIA.map(q=>q.code)];
+  const rows = list.map(a => [
+    a.savedAt, a.auditDate, a.branch, a.modName, a.amName, a.auditor, a.total, a.grade,
+    ...Object.keys(SECTION_MAX).map(s=>a.sectionScores[s] ?? ''),
+    a.note, ...CRITERIA.map(q=>a.scores[q.code] ?? '')
+  ]);
+  const csv = '\uFEFF' + [headers, ...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url;
+  a.download='QSC_Audit_History_' + todayLocal() + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('ดาวน์โหลด CSV แล้ว');
+}
+
+function copySummary() {
+  const total = CRITERIA.reduce((sum,q)=>sum+(scores[q.code]===undefined?0:Number(scores[q.code])),0);
+  const answered = CRITERIA.filter(q=>scores[q.code]!==undefined).length;
+  const [g] = grade(total);
+  const text = [
+    'QSC Branch Audit',
+    `วันที่: ${document.getElementById('auditDate').value}`,
+    `สาขา: ${document.getElementById('branch').value}`,
+    `MOD: ${document.getElementById('modName').value}`,
+    `ผู้ตรวจ: ${document.getElementById('auditor').value}`,
+    `คะแนน: ${total}/100 (${g})`,
+    `ตอบแล้ว: ${answered}/${CRITERIA.length}`
+  ].join('\n');
+  navigator.clipboard?.writeText(text).then(()=>toast('คัดลอกสรุปแล้ว')).catch(()=>toast('ไม่สามารถคัดลอกอัตโนมัติได้'));
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(window.__toast); window.__toast=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+renderSections();
+updateTotals();
+renderHistory();
+</script>
+</body>
+</html>

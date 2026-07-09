@@ -1,0 +1,74 @@
+# Production stack. Only the frontend (nginx) is exposed; it serves the SPA and
+# reverse-proxies /api to the api service. MySQL and the API stay on the internal
+# network. Usage:
+#   cp .env.example .env   # set strong MYSQL_* and JWT_SECRET
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      API_PORT: 8080
+      NODE_ENV: production
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      UPLOAD_DIR: uploads
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      # Shopee export (optional Google Sheet/Drive mirror; DB save always works)
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      SHOPEE_SHEET_ID: ${SHOPEE_SHEET_ID:-}
+      SHOPEE_SHEET_TAB: ${SHOPEE_SHEET_TAB:-Orders}
+      SHOPEE_DRIVE_FOLDER_ID: ${SHOPEE_DRIVE_FOLDER_ID:-}
+      SHOPEE_API_KEY: ${SHOPEE_API_KEY:-}
+    volumes:
+      - uploads_data:/app/backend/uploads
+      # To enable the Google Sheet mirror, place the service-account key at
+      # ./shopee-service-account.json, uncomment the line below, and set
+      # GOOGLE_APPLICATION_CREDENTIALS=/app/backend/shopee-service-account.json
+      # - ./shopee-service-account.json:/app/backend/shopee-service-account.json:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+    restart: always
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+  uploads_data:

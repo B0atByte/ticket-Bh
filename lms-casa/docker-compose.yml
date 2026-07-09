@@ -1,0 +1,87 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: lms-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=caching_sha2_password
+      - --max-connections=500
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lms}
+      MYSQL_USER: ${MYSQL_USER:-lms_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me}
+      TZ: Asia/Bangkok
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-change-me-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - lms-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: lms-redis
+    restart: unless-stopped
+    command: >
+      sh -c "redis-server
+      --requirepass $${REDIS_PASSWORD}
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me-redis}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-change-me-redis}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lms-net
+
+  server:
+    profiles: ["app"]
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: lms-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: mysql://${MYSQL_USER:-lms_user}:${MYSQL_PASSWORD:-change-me}@mysql:3306/${MYSQL_DATABASE:-lms}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-change-me-redis}@redis:6379
+      # Raise libuv threadpool so concurrent bcrypt logins don't serialize on 4 threads.
+      UV_THREADPOOL_SIZE: ${UV_THREADPOOL_SIZE:-16}
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    # For 5k users, run several replicas of this service behind a load balancer
+    # (e.g. `docker compose up -d --scale server=4` with the host port unbound,
+    # or an orchestrator), with workers split via ENABLE_WORKERS.
+    networks:
+      - lms-net
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  lms-net:
+    driver: bridge

@@ -1,0 +1,18 @@
+{
+  "name": "shopee-export-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Receives scraped Shopee orders from the Chrome extension and writes them to Google Sheets + Drive.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "googleapis": "^144.0.0",
+    "zod": "^3.23.8"
+  }
+}

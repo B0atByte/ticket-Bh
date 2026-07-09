@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>xBloom · BH — บริการหลังการขาย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16181d;--ink-2:#4b5159;--ink-3:#8b9099;
+    --line:#e4e6e9;--line-2:#d7dade;--bg:#f5f6f7;--card:#fff;
+    --brand:#0d4d43;--brand-soft:#eef3f1;
+    --accent:#e7522b;--accent-soft:#fdf1ec;
+    --ok:#0f7a52;--ok-soft:#eaf4ef;
+    --warn:#b4452a;--warn-soft:#fbf2ef;
+    --r:2px;        /* sharp corners */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"IBM Plex Sans Thai","Segoe UI",-apple-system,"Sarabun",Tahoma,sans-serif;
+    background:var(--bg);color:var(--ink);
+    font-size:15px;line-height:1.6;letter-spacing:0;-webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:440px;margin:0 auto;min-height:100vh;background:var(--bg);padding-bottom:104px}
+  svg{display:block}
+  .ico{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:square;stroke-linejoin:miter}
+
+  /* header */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(245,246,247,.88);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo-bh{width:34px;height:34px;border-radius:var(--r);border:1px solid var(--ink);background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--brand);font-weight:700;font-size:13px;letter-spacing:.5px}
+  .brand .meta small{display:block;font-size:10px;color:var(--ink-3);line-height:1.3;letter-spacing:.04em;text-transform:uppercase}
+  .brand .meta b{font-size:12.5px;font-weight:600;color:var(--ink)}
+  .logo-xb{display:flex;align-items:center;gap:7px}
+  .logo-xb .dot{width:7px;height:7px;background:var(--accent)}
+  .logo-xb b{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+
+  /* views */
+  .view{display:none}
+  .view.active{display:block;animation:fade .26s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+  /* hero */
+  .hero{padding:26px 18px 6px}
+  .hero .eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+  .hero h1{margin:0 0 6px;font-size:23px;font-weight:700;letter-spacing:-.02em}
+  .hero p{margin:0;color:var(--ink-2);font-size:14px}
+
+  /* home tiles */
+  .home{padding:18px 18px 0}
+  .tile{width:100%;text-align:left;font-family:inherit;background:var(--card);border:1px solid var(--line-2);border-radius:var(--r);padding:18px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:15px;transition:border-color .15s,transform .1s}
+  .tile:active{transform:translateY(1px)}
+  .tile:hover{border-color:var(--ink)}
+  .tile .t-ic{flex:0 0 auto;width:50px;height:50px;border-radius:var(--r);display:flex;align-items:center;justify-content:center}
+  .tile .t-ic .ico{width:26px;height:26px}
+  .tile.primary .t-ic{background:var(--ink)}
+  .tile.primary .t-ic .ico{stroke:#fff}
+  .tile.secondary .t-ic{background:var(--brand-soft);border:1px solid var(--line-2)}
+  .tile.secondary .t-ic .ico{stroke:var(--brand)}
+  .tile .t-tx{flex:1;min-width:0}
+  .tile .t-tx b{display:block;font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+  .tile .t-tx small{font-size:12.5px;color:var(--ink-3)}
+  .tile .t-go{width:20px;height:20px;color:var(--ink-3);flex:0 0 auto}
+
+  .home-note{display:flex;align-items:flex-start;gap:9px;margin-top:6px;padding:12px 14px;border:1px solid var(--line-2);border-left:3px solid var(--brand);background:var(--card);color:var(--ink-2);font-size:12px}
+  .home-note .ico{width:15px;height:15px;flex:0 0 auto;margin-top:2px;stroke-width:1.7;color:var(--brand)}
+
+  /* back bar */
+  .backbar{padding:16px 18px 0}
+  .back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;font-family:inherit;color:var(--ink-2);font-size:13.5px;font-weight:600;cursor:pointer;padding:6px 2px}
+  .back .ico{width:18px;height:18px}
+  .back:active{opacity:.6}
+
+  /* card */
+  .card{background:var(--card);border:1px solid var(--line-2);border-radius:var(--r);margin:14px 18px 0;padding:20px 18px}
+  .card-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .step{flex:0 0 auto;width:26px;height:26px;border-radius:var(--r);border:1px solid var(--ink);color:var(--ink);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .card-head h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em}
+  .card-head .sub{font-size:12.5px;color:var(--ink-3);margin:1px 0 0}
+
+  /* scan button */
+  .scan-btn{width:100%;border:1px solid var(--ink);cursor:pointer;margin-top:18px;padding:15px 16px;border-radius:var(--r);background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;transition:opacity .15s,transform .1s}
+  .scan-btn:active{transform:translateY(1px);opacity:.92}
+  .scan-btn .lead{flex:0 0 auto;width:38px;height:38px;border-radius:var(--r);background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+  .scan-btn .lead .ico{width:21px;height:21px;stroke-width:1.5}
+  .scan-btn .txt{flex:1;text-align:left}
+  .scan-btn .txt b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .scan-btn .txt small{font-size:11.5px;opacity:.7}
+  .scan-btn .chev{width:18px;height:18px;opacity:.5}
+  .scan-btn.ghost{background:var(--card);color:var(--ink);border-color:var(--ink)}
+  .scan-btn.ghost .lead{background:var(--brand-soft);color:var(--brand);border:1px solid var(--line-2)}
+  .scan-btn.ghost .txt small{opacity:1;color:var(--ink-3)}
+
+  .hint{display:flex;align-items:flex-start;gap:8px;margin-top:12px;color:var(--ink-3);font-size:12px}
+  .hint .ico{width:15px;height:15px;flex:0 0 auto;margin-top:2px;stroke-width:1.7}
+  .hint b{color:var(--ink-2);font-weight:600}
+
+  /* SN result */
+  .sn-result{margin-top:14px;border:1px solid var(--line-2);border-left:3px solid var(--brand);background:var(--brand-soft);border-radius:var(--r);padding:13px 14px;display:none;align-items:center;gap:12px}
+  .sn-result.show{display:flex}
+  .sn-result .ck{flex:0 0 auto;width:28px;height:28px;border-radius:var(--r);background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center}
+  .sn-result .ck .ico{width:16px;height:16px;stroke:#fff;stroke-width:2}
+  .sn-result small{display:block;color:var(--ink-3);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .sn-result b{font-size:16px;letter-spacing:.02em;font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-weight:600;color:var(--ink)}
+
+  /* form */
+  .field{margin-top:16px}
+  .field label{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+  .field label .req{color:var(--accent);font-weight:700}
+  .field input,.field textarea{width:100%;border:1px solid var(--line-2);border-radius:var(--r);padding:12px 13px;font-size:15px;font-family:inherit;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s}
+  .field input::placeholder,.field textarea::placeholder{color:var(--ink-3)}
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(22,24,29,.12)}
+  .field textarea{resize:none;min-height:76px}
+
+  /* uploader */
+  .uploader{margin-top:16px;border:1px dashed var(--line-2);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--card);transition:border-color .15s,background .15s}
+  .uploader:active{border-color:var(--ink-3)}
+  .uploader .ub{flex:0 0 auto;width:42px;height:42px;border-radius:var(--r);background:var(--bg);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+  .uploader .ut{flex:1}
+  .uploader .ut b{display:block;font-size:14px;font-weight:600}
+  .uploader .ut small{color:var(--ink-3);font-size:12px}
+  .uploader .add{width:20px;height:20px;color:var(--ink-3)}
+  .uploader.done{border-style:solid;border-color:var(--brand);background:var(--brand-soft)}
+  .uploader.done .ub{background:var(--brand);border-color:var(--brand);color:#fff}
+
+  /* warranty strip */
+  .warranty{margin-top:18px;display:flex;align-items:center;gap:14px;border:1px solid var(--line-2);border-radius:var(--r);padding:14px 15px;background:var(--bg)}
+  .warranty .yr{display:flex;align-items:baseline;gap:3px;color:var(--brand)}
+  .warranty .yr b{font-size:26px;font-weight:700;line-height:1;letter-spacing:-.03em}
+  .warranty .yr span{font-size:12px;font-weight:600}
+  .warranty .vsep{width:1px;height:30px;background:var(--line-2)}
+  .warranty .wt b{font-size:13.5px;font-weight:600;display:block}
+  .warranty .wt span{font-size:11.5px;color:var(--ink-3)}
+
+  /* tax */
+  .selfserve{display:flex;align-items:center;gap:8px;margin-top:18px;margin-bottom:-2px}
+  .selfserve .tag{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--brand);border:1px solid var(--line-2);background:var(--brand-soft);padding:3px 8px;border-radius:var(--r)}
+  .selfserve span{font-size:12px;color:var(--ink-3)}
+  .tax-form{display:none;margin-top:4px}
+  .tax-form.show{display:block}
+
+  /* warranty check */
+  .check-row{display:flex;gap:10px;margin-top:18px}
+  .check-row .field{flex:1;margin-top:0}
+  .check-row .field input{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;letter-spacing:.02em}
+  .check-btn{flex:0 0 auto;align-self:stretch;border:none;cursor:pointer;padding:0 18px;border-radius:var(--r);background:var(--ink);color:#fff;font-size:14px;font-weight:600;font-family:inherit;transition:opacity .15s,transform .1s}
+  .check-btn:active{transform:translateY(1px);opacity:.92}
+  .or-scan{margin-top:14px;display:flex;align-items:center;gap:12px;color:var(--ink-3);font-size:11.5px}
+  .or-scan:before,.or-scan:after{content:"";flex:1;height:1px;background:var(--line-2)}
+  .scan-alt{margin-top:14px;width:100%;border:1px solid var(--ink);background:var(--card);cursor:pointer;padding:13px 15px;border-radius:var(--r);display:flex;align-items:center;gap:13px;font-family:inherit;transition:border-color .15s,transform .1s}
+  .scan-alt:active{transform:translateY(1px)}
+  .scan-alt .lead{flex:0 0 auto;width:36px;height:36px;border-radius:var(--r);background:var(--brand-soft);color:var(--brand);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center}
+  .scan-alt .lead .ico{width:20px;height:20px;stroke:var(--brand)}
+  .scan-alt .txt{flex:1;text-align:left}
+  .scan-alt .txt b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+  .scan-alt .txt small{font-size:11.5px;color:var(--ink-3)}
+  .scan-alt .chev{width:18px;height:18px;color:var(--ink-3)}
+
+  .wresult{display:none;margin-top:18px;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
+  .wresult.show{display:block;animation:fade .3s ease}
+  .wresult .wr-head{padding:15px;display:flex;align-items:center;gap:13px;background:var(--ok-soft);border-bottom:1px solid var(--line-2);border-left:3px solid var(--ok)}
+  .wresult .wr-ic{flex:0 0 auto;width:40px;height:40px;border-radius:var(--r);background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center}
+  .wresult .wr-ic .ico{width:22px;height:22px;stroke:#fff;stroke-width:2}
+  .wresult .wr-status b{display:block;font-size:14.5px;font-weight:700;color:var(--ok)}
+  .wresult .wr-status span{font-size:12px;color:var(--ink-2)}
+  .wresult .wr-status .days{font-weight:700;color:var(--ink)}
+  .wresult .wr-body{padding:16px}
+  .wr-bar{height:8px;background:var(--line);overflow:hidden;margin-bottom:6px;border:1px solid var(--line-2)}
+  .wr-bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .9s ease}
+  .wr-bar-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-bottom:16px}
+  .wr-rows{display:grid;gap:0}
+  .wr-rows .r{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+  .wr-rows .r:last-child{border-bottom:none}
+  .wr-rows .r small{color:var(--ink-3);font-size:12.5px}
+  .wr-rows .r b{font-size:13.5px;font-weight:600}
+  .wr-rows .r b.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;letter-spacing:.02em}
+  .wr-rows .r b.exp{color:var(--brand)}
+
+  /* footer */
+  .footer{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:440px;margin:0 auto;padding:14px 18px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 62%,rgba(245,246,247,0));display:none}
+  .footer.show{display:block}
+  .submit{width:100%;border:none;cursor:pointer;padding:15px;border-radius:var(--r);background:var(--brand);color:#fff;font-size:15.5px;font-weight:600;font-family:inherit;letter-spacing:-.01em;display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .1s,opacity .15s}
+  .submit:active{transform:translateY(1px);opacity:.94}
+  .submit .ico{width:18px;height:18px;stroke:#fff}
+  .footer .micro{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:var(--ink-3);margin:9px 0 0}
+  .footer .micro .ico{width:13px;height:13px;stroke-width:1.7}
+
+  /* scanner */
+  .scanner{position:fixed;inset:0;z-index:100;background:#0c0d10;display:none;flex-direction:column}
+  .scanner.show{display:flex}
+  .sc-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;color:#fff}
+  .sc-bar button{background:rgba(255,255,255,.12);border:none;color:#fff;width:38px;height:38px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .sc-bar button .ico{stroke:#fff}
+  .sc-bar b{font-size:14.5px;font-weight:600}
+  .sc-view{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#1c1f25,#0c0d10 75%)}
+  .reticle{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);width:72%;aspect-ratio:1.5/1;box-shadow:0 0 0 9999px rgba(12,13,16,.6)}
+  .reticle .c{position:absolute;width:28px;height:28px;border:2px solid #fff}
+  .reticle .tl{top:0;left:0;border-right:none;border-bottom:none}
+  .reticle .tr{top:0;right:0;border-left:none;border-bottom:none}
+  .reticle .bl{bottom:0;left:0;border-right:none;border-top:none}
+  .reticle .br{bottom:0;right:0;border-left:none;border-top:none}
+  .laser{position:absolute;left:5%;right:5%;height:2px;background:var(--accent);box-shadow:0 0 10px 1px var(--accent);top:46%;animation:scan 1.7s ease-in-out infinite}
+  @keyframes scan{0%,100%{top:20%}50%{top:80%}}
+  .sc-foot{padding:22px 24px 36px;color:#fff;text-align:center}
+  .sc-foot b{font-size:14.5px;font-weight:600}
+  .sc-foot small{display:block;color:rgba(255,255,255,.55);font-size:12px;margin-top:5px}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:118px;transform:translateX(-50%) translateY(14px);background:var(--ink);color:#fff;padding:11px 15px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:60;display:flex;align-items:center;gap:9px;max-width:84%}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ico{width:16px;height:16px;stroke:#fff;flex:0 0 auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-bh">BH</div>
+      <div class="meta">
+        <small>Brewing Happiness</small>
+        <b>After-Sales</b>
+      </div>
+    </div>
+    <div class="logo-xb"><span class="dot"></span><b>xBloom</b></div>
+  </header>
+
+  <!-- ===================== HOME ===================== -->
+  <div class="view active" id="viewHome">
+    <div class="hero">
+      <div class="eyebrow">บริการหลังการขาย</div>
+      <h1>เลือกบริการที่ต้องการ</h1>
+      <p>ลงทะเบียนรับประกัน หรือตรวจสอบวันหมดประกันของเครื่องชงกาแฟ xBloom</p>
+    </div>
+
+    <div class="home">
+      <button class="tile primary" onclick="goRegister()">
+        <span class="t-ic">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.9 8.2 7 9.5 4.1-1.3 7-5.1 7-9.5V6z"/><polyline points="9 11.5 11 13.5 15 9.5"/></svg>
+        </span>
+        <span class="t-tx">
+          <b>ลงทะเบียนรับประกัน</b>
+          <small>เปิดกล้องสแกน SN รับสิทธิ์ประกัน 2 ปี</small>
+        </span>
+        <svg class="ico t-go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <button class="tile secondary" onclick="goCheck()">
+        <span class="t-ic">
+          <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7.5 12 12 15 14"/></svg>
+        </span>
+        <span class="t-tx">
+          <b>ตรวจสอบวันหมดประกัน</b>
+          <small>กรอกหรือสแกน SN เพื่อเช็คสถานะประกัน</small>
+        </span>
+        <svg class="ico t-go" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <div class="home-note">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r=".4" fill="currentColor" stroke-width="1.5"/></svg>
+        <span>ลงทะเบียนภายใน 1-7 วันหลังซื้อสินค้า เพื่อรับสิทธิ์ประกัน 2 ปีเต็ม</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== REGISTER ===================== -->
+  <div class="view" id="viewRegister">
+    <div class="backbar">
+      <button class="back" onclick="goHome()">
+        <svg class="ico" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        ย้อนกลับ
+      </button>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="step">1</div>
+        <div>
+          <h2>ลงทะเบียนรับประกัน</h2>
+          <p class="sub">สแกนหมายเลขซีเรียลบนตัวสินค้า</p>
+        </div>
+      </div>
+
+      <button class="scan-btn" onclick="openScanner('sn')">
+        <span class="lead">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7"/><path d="M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7"/><path d="M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+        </span>
+        <span class="txt">
+          <b>สแกนหมายเลขซีเรียล (SN)</b>
+          <small>เปิดกล้องเพื่อสแกนบาร์โค้ด</small>
+        </span>
+        <svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <div class="hint">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3.5"/></svg>
+        <span><b>No-Typing</b> — สแกนเพื่อดึงเลข SN เข้าระบบอัตโนมัติ ไม่ต้องพิมพ์เอง ป้องกันการพิมพ์ผิด</span>
+      </div>
+
+      <div class="sn-result" id="snResult">
+        <span class="ck"><svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg></span>
+        <div>
+          <small>หมายเลขซีเรียล</small>
+          <b id="snValue">XB-7K4920-TH</b>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>ชื่อ–นามสกุล <span class="req">*</span></label>
+        <input type="text" placeholder="เช่น สมหญิง ใจดี">
+      </div>
+      <div class="field">
+        <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+        <input type="tel" inputmode="numeric" placeholder="08X-XXX-XXXX">
+      </div>
+      <div class="field">
+        <label>อีเมล</label>
+        <input type="email" inputmode="email" placeholder="you@email.com">
+      </div>
+      <div class="field">
+        <label>ที่อยู่จัดส่ง / ติดต่อ</label>
+        <textarea placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+      </div>
+
+      <div class="uploader" id="receiptUp" onclick="markReceipt(this)">
+        <span class="ub" id="ubIcon">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7H7l1.2-1.8A1 1 0 0 1 9 4.7h6a1 1 0 0 1 .8.5L17 7h2.5A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.2"/></svg>
+        </span>
+        <div class="ut">
+          <b id="ubTitle">ถ่ายรูปใบเสร็จ</b>
+          <small id="ubSub">เก็บไว้เป็นหลักฐานการซื้อ</small>
+        </div>
+        <svg class="ico add" id="ubAdd" viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+      </div>
+
+      <div class="warranty">
+        <span class="yr"><b>2</b><span>ปี</span></span>
+        <span class="vsep"></span>
+        <div class="wt">
+          <b>สิทธิ์รับประกัน xBloom Studio</b>
+          <span>มีผลทันทีเมื่อลงทะเบียนสำเร็จ</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="step">2</div>
+        <div>
+          <h2>ขอใบกำกับภาษี</h2>
+          <p class="sub">บริการตัวเอง ทำได้เองทันที</p>
+        </div>
+      </div>
+
+      <div class="selfserve">
+        <span class="tag">Self-service</span>
+        <span>สแกนเอง · ระบุข้อมูลภาษีเอง</span>
+      </div>
+
+      <button class="scan-btn ghost" onclick="openScanner('tax')">
+        <span class="lead">
+          <svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><line x1="14" y1="14" x2="14" y2="20"/><line x1="17.5" y1="14" x2="17.5" y2="17.5"/><line x1="20" y1="14" x2="20" y2="20"/></svg>
+        </span>
+        <span class="txt">
+          <b>สแกนท้ายใบเสร็จ</b>
+          <small>ดึงข้อมูลบิลเพื่อออกใบกำกับภาษี</small>
+        </span>
+        <svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <div class="tax-form" id="taxForm">
+        <div class="field">
+          <label>ชื่อผู้เสียภาษี / นิติบุคคล <span class="req">*</span></label>
+          <input type="text" placeholder="ชื่อตามบัตร หรือชื่อบริษัท">
+        </div>
+        <div class="field">
+          <label>เลขประจำตัวผู้เสียภาษี (13 หลัก) <span class="req">*</span></label>
+          <input type="text" inputmode="numeric" placeholder="X-XXXX-XXXXX-XX-X">
+        </div>
+        <div class="field">
+          <label>ที่อยู่ออกใบกำกับภาษี</label>
+          <textarea placeholder="ที่อยู่ตามที่จดทะเบียน"></textarea>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== CHECK ===================== -->
+  <div class="view" id="viewCheck">
+    <div class="backbar">
+      <button class="back" onclick="goHome()">
+        <svg class="ico" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        ย้อนกลับ
+      </button>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="step">
+          <svg class="ico" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M12 3 5 6v5c0 4.4 2.9 8.2 7 9.5 4.1-1.3 7-5.1 7-9.5V6z"/><polyline points="9 11.5 11 13.5 15 9.5"/></svg>
+        </div>
+        <div>
+          <h2>ตรวจสอบวันหมดประกัน</h2>
+          <p class="sub">กรอกหรือสแกน SN เพื่อเช็คสถานะประกัน</p>
+        </div>
+      </div>
+
+      <div class="check-row">
+        <div class="field">
+          <input type="text" id="checkSN" placeholder="กรอกหมายเลขซีเรียล (SN)">
+        </div>
+        <button class="check-btn" onclick="checkWarranty()">ตรวจสอบ</button>
+      </div>
+
+      <div class="or-scan">หรือ</div>
+
+      <button class="scan-alt" onclick="openScanner('check')">
+        <span class="lead">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 7V5.5A1.5 1.5 0 0 1 5.5 4H7"/><path d="M17 4h1.5A1.5 1.5 0 0 1 20 5.5V7"/><path d="M20 17v1.5a1.5 1.5 0 0 1-1.5 1.5H17"/><path d="M7 20H5.5A1.5 1.5 0 0 1 4 18.5V17"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+        </span>
+        <span class="txt">
+          <b>สแกนหมายเลขซีเรียล (SN)</b>
+          <small>เปิดกล้องเพื่อสแกนบาร์โค้ด</small>
+        </span>
+        <svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <div class="wresult" id="wresult">
+        <div class="wr-head">
+          <span class="wr-ic"><svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg></span>
+          <div class="wr-status">
+            <b>ประกันใช้งานได้</b>
+            <span>เหลืออีก <span class="days">684</span> วัน · จาก 2 ปีเต็ม</span>
+          </div>
+        </div>
+        <div class="wr-body">
+          <div class="wr-bar"><i id="wrBar"></i></div>
+          <div class="wr-bar-labels">
+            <span>12 มิ.ย. 2026</span>
+            <span>12 มิ.ย. 2028</span>
+          </div>
+          <div class="wr-rows">
+            <div class="r"><small>หมายเลขซีเรียล</small><b class="mono">XB-7K4920-TH</b></div>
+            <div class="r"><small>รุ่นสินค้า</small><b>xBloom Studio</b></div>
+            <div class="r"><small>วันที่ลงทะเบียน</small><b>12 มิ.ย. 2026</b></div>
+            <div class="r"><small>วันหมดประกัน</small><b class="exp">12 มิ.ย. 2028</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<!-- footer (register only) -->
+<div class="footer" id="footer">
+  <button class="submit" onclick="showToast('ลงทะเบียนสำเร็จ · รับประกัน 2 ปีมีผลแล้ว')">
+    ยืนยันการลงทะเบียน
+    <svg class="ico" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+  </button>
+  <div class="micro">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    ข้อมูลของคุณถูกเก็บเป็นความลับตามนโยบาย BH · xBloom
+  </div>
+</div>
+
+<!-- scanner -->
+<div class="scanner" id="scanner">
+  <div class="sc-bar">
+    <button onclick="closeScanner()"><svg class="ico" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    <b id="scanTitle">สแกนหมายเลขซีเรียล</b>
+    <button><svg class="ico" viewBox="0 0 24 24"><path d="M13 3 4 14h6l-1 7 9-11h-6z"/></svg></button>
+  </div>
+  <div class="sc-view">
+    <div class="reticle">
+      <span class="c tl"></span><span class="c tr"></span><span class="c bl"></span><span class="c br"></span>
+    </div>
+    <div class="laser"></div>
+  </div>
+  <div class="sc-foot">
+    <b id="scanMsg">วางบาร์โค้ดให้อยู่ในกรอบ</b>
+    <small>ระบบจะอ่านค่าและกรอกให้อัตโนมัติ</small>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg class="ico" viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+  function showView(name){
+    ['Home','Register','Check'].forEach(function(v){
+      document.getElementById('view'+v).classList.toggle('active', v.toLowerCase()===name);
+    });
+    document.getElementById('footer').classList.toggle('show', name==='register');
+    window.scrollTo(0,0);
+  }
+  function goHome(){showView('home');}
+  function goRegister(){showView('register');openScanner('sn');}
+  function goCheck(){showView('check');}
+
+  function openScanner(mode){
+    var titles={sn:'สแกนหมายเลขซีเรียล',tax:'สแกนท้ายใบเสร็จ',check:'สแกนหมายเลขซีเรียล'};
+    document.getElementById('scanTitle').textContent=titles[mode]||'สแกน';
+    document.getElementById('scanMsg').textContent='วางบาร์โค้ดให้อยู่ในกรอบ';
+    document.getElementById('scanner').classList.add('show');
+    setTimeout(function(){
+      document.getElementById('scanMsg').textContent = mode==='tax' ? 'อ่านข้อมูลบิลสำเร็จ' : 'อ่านค่าสำเร็จ';
+      setTimeout(function(){
+        closeScanner();
+        if(mode==='sn'){
+          document.getElementById('snResult').classList.add('show');
+          showToast('ดึงเลข SN เข้าระบบแล้ว');
+        }else if(mode==='tax'){
+          document.getElementById('taxForm').classList.add('show');
+          showToast('ดึงข้อมูลใบเสร็จเข้าฟอร์มแล้ว');
+        }else if(mode==='check'){
+          document.getElementById('checkSN').value='XB-7K4920-TH';
+          checkWarranty();
+          showToast('ดึงเลข SN แล้ว');
+        }
+      },650);
+    },2200);
+  }
+  function closeScanner(){document.getElementById('scanner').classList.remove('show');}
+
+  function checkWarranty(){
+    var el=document.getElementById('wresult');
+    el.classList.add('show');
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){document.getElementById('wrBar').style.width='5%';},150);
+  }
+
+  function markReceipt(el){
+    el.classList.add('done');
+    document.getElementById('ubTitle').textContent='บันทึกรูปใบเสร็จแล้ว';
+    document.getElementById('ubSub').textContent='แตะเพื่อถ่ายใหม่';
+    document.getElementById('ubIcon').innerHTML='<svg class="ico" viewBox="0 0 24 24" stroke="#fff"><polyline points="5 12.5 10 17.5 19 7"/></svg>';
+    document.getElementById('ubAdd').style.display='none';
+  }
+
+  var toastT;
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    document.getElementById('toastMsg').textContent=msg;
+    t.classList.add('show');
+    clearTimeout(toastT);
+    toastT=setTimeout(function(){t.classList.remove('show');},2600);
+  }
+</script>
+</body>
+</html>

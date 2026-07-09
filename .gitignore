@@ -1,0 +1,11 @@
+node_modules/
+.env
+!.env.example
+__pycache__/
+dist/
+build/
+*.log
+
+Bhlogisticssystem/backend/uploads/
+PRsystem/backend/uploads/
+lms-casa/server/backups/

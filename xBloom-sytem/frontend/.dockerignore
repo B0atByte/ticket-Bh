@@ -1,0 +1,6 @@
+node_modules
+dist
+.env
+# TLS key/cert are provided at runtime via a volume mount — never bake into the image
+certs
+npm-debug.log*
