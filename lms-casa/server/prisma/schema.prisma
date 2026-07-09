@@ -60,6 +60,7 @@ model User {
   courseAnswers          CourseAnswer[]
   points                 UserPoints?
   pointEvents            PointEvent[]
+  reportedIssues         Issue[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -782,6 +783,20 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Issue {
+  id          BigInt  @id @default(autoincrement())
+  reporterId  BigInt? @map("reporter_id")
+  description String  @db.Text
+  page        String? @db.VarChar(500)
+  reporter    User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reporterId])
+  @@index([createdAt])
+  @@map("issues")
 }
 
 model Setting {

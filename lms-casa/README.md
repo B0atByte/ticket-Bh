@@ -52,6 +52,15 @@ lms-system/
 
 ดู `../Agenstimeline.md` section 1 (Project Brief)
 
+## แจ้งปัญหา (Report Issue)
+
+ทุกหน้าหลังล็อกอิน (รวมหน้าเรียน) มีปุ่ม "แจ้งปัญหา" ลอยมุมซ้ายล่าง (`client/src/features/issues/ReportIssueButton.tsx`) ให้ผู้ใช้กดแจ้งปัญหาที่เจอได้ทันที
+
+- Frontend ส่งคำอธิบายปัญหาพร้อม path ของหน้าปัจจุบันไปที่ `POST /api/v1/issues` (ต้อง login)
+- Backend (`server/src/modules/issues/`) validate ข้อมูล บันทึกลงตาราง `issues` พร้อมผู้แจ้ง (จาก JWT)
+- ถ้าตั้งค่า `DISCORD_WEBHOOK_URL` ไว้ ระบบจะส่งแจ้งเตือนเข้า Discord ทันทีที่มีการแจ้งปัญหาใหม่ (ถ้าไม่ตั้งค่า ระบบจะข้ามขั้นตอนนี้ไปเงียบๆ ไม่ error)
+- ไม่มีหน้าดูรายการปัญหาในระบบ — ดูผ่าน Discord หรือ query ตาราง `issues` ตรงๆ
+
 ## Scripts
 
 | Command | Effect |

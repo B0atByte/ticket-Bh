@@ -22,6 +22,7 @@ import reportsRouter from './modules/reports/reports.routes.js';
 import auditLogsRouter from './modules/audit-logs/audit-logs.routes.js';
 import settingsRouter from './modules/settings/settings.routes.js';
 import notificationsRouter from './modules/notifications/notifications.routes.js';
+import issuesRouter from './modules/issues/issues.routes.js';
 import meRouter from './modules/me/me.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import departmentsRouter from './modules/departments/departments.routes.js';
@@ -155,6 +156,7 @@ export function createApp(): Express {
   app.use('/api/v1/audit-logs', auditLogsRouter);
   app.use('/api/v1/settings', settingsRouter);
   app.use('/api/v1/notifications', notificationsRouter);
+  app.use('/api/v1/issues', issuesRouter);
   app.use('/api/v1/courses', coursesRouter);
   app.use('/api/v1/courses/:courseId/enrollments', enrollmentsCourseRouter);
   app.use('/api/v1/enrollments', enrollmentsFlatRouter);

@@ -42,6 +42,9 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
   SENTRY_DSN: z.string().optional().default(''),
 
+  // Discord notification on "แจ้งปัญหา" (report issue) submissions — optional, silently skipped if unset
+  DISCORD_WEBHOOK_URL: z.string().optional().default(''),
+
   // === AI question generation (optional) ===
   // Priority: DeepSeek → OpenAI → local fallback
   DEEPSEEK_API_KEY: z.string().optional().default(''),
