@@ -7,7 +7,7 @@ import {
   Shield, KeyRound, UserPlus, BarChart2,
   FileCheck, Send, Banknote, History, RefreshCw, Menu, Package,
   Download, Filter, CalendarDays, MessageSquare, ChevronLeft,
-  ExternalLink, MapPin, Image
+  ExternalLink, MapPin, Image, Bug, Loader2
 } from 'lucide-react';
 import {
   ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, CATEGORIES,
@@ -4003,6 +4003,9 @@ export default function App() {
   const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
   const [resetPwUser, setResetPwUser] = useState<User | null>(null);
   const [editUserTarget, setEditUserTarget] = useState<User | null | undefined>(undefined);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportDesc, setReportDesc] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // Inline modal form fields
   const [prFile, setPrFile] = useState('');
@@ -4184,6 +4187,24 @@ export default function App() {
     } catch (err: any) { toast(err.message || 'เกิดข้อผิดพลาด', 'error'); }
   };
 
+  const handleReportIssue = async () => {
+    if (reportDesc.trim().length < 5) {
+      toast('กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร', 'error');
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      await api.issues.create({ description: reportDesc.trim(), page });
+      toast('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
+      setReportOpen(false);
+      setReportDesc('');
+    } catch (err: any) {
+      toast(err.message || 'ส่งแจ้งปัญหาไม่สำเร็จ กรุณาลองใหม่', 'error');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   if (!settingsLoaded) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -4248,6 +4269,33 @@ export default function App() {
 
       <PageLoader loading={isLoading} />
       <ToastContainer toasts={toasts} remove={id => setToasts(t => t.filter(x => x.id !== id))} />
+
+      {/* Report Issue Button */}
+      <button
+        onClick={() => setReportOpen(true)}
+        className="fixed bottom-20 sm:bottom-4 left-4 z-40 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold pl-3 pr-4 py-2.5 rounded-full shadow-lg shadow-red-600/30 transition-colors"
+      >
+        <Bug size={18} />
+        แจ้งปัญหา
+      </button>
+
+      <Modal open={reportOpen} title="แจ้งปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportDesc(''); } }}
+        footer={
+          <div className="flex gap-2">
+            <button onClick={() => { setReportOpen(false); setReportDesc(''); }} disabled={reportSubmitting}
+              className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
+              ยกเลิก
+            </button>
+            <button onClick={handleReportIssue} disabled={reportSubmitting}
+              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-red-600/20">
+              {reportSubmitting && <Loader2 size={14} className="animate-spin" />}
+              ส่งแจ้งปัญหา
+            </button>
+          </div>
+        }>
+        <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
+          placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
+      </Modal>
 
       {/* Request Detail Modal */}
       <RequestDetailModal req={viewReq} onClose={() => setViewReq(null)} />

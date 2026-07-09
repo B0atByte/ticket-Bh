@@ -260,6 +260,26 @@ export function discordDailyReport(webhook: string, d: ReportData) {
   }, d.siteName)
 }
 
+export function discordReportIssue(
+  webhook: string,
+  issue: { description: string; page: string | null; reporterName: string | null; reporterRole: string | null },
+  siteName?: string,
+) {
+  return send(webhook, {
+    title: '🐞 แจ้งปัญหาใหม่',
+    description: issue.description,
+    color: 0xef4444,
+    fields: [
+      {
+        name: 'ผู้แจ้ง',
+        value: issue.reporterName ? `${issue.reporterName} (${deptLabel(issue.reporterRole || '')})` : 'ไม่ระบุ',
+        inline: true,
+      },
+      { name: 'หน้า', value: issue.page ?? '-', inline: true },
+    ],
+  }, siteName)
+}
+
 export function discordTest(webhook: string, siteName?: string) {
   return send(webhook, {
     author: { name: 'IT Support — ทดสอบระบบ' },

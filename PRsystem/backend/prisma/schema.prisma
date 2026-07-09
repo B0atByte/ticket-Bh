@@ -159,6 +159,18 @@ model Settings {
   @@map("settings")
 }
 
+model Issue {
+  id           String   @id @default(cuid())
+  description  String   @db.Text
+  page         String?
+  reporterName String?
+  reporterRole String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("issues")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String

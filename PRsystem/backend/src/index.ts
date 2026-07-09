@@ -13,6 +13,7 @@ import users from './routes/users.js'
 import audit from './routes/audit.js'
 import files from './routes/files.js'
 import settings from './routes/settings.js'
+import issues from './routes/issues.js'
 
 const app = new Hono()
 

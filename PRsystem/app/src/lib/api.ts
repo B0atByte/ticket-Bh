@@ -90,4 +90,7 @@ export const api = {
       window.open(`${BASE_URL}${url}`, '_blank')
     },
   },
+  issues: {
+    create: (data: { description: string; page?: string }) => req<any>('POST', '/api/issues', data),
+  },
 }
