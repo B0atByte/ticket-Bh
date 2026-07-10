@@ -58,6 +58,7 @@ $NEED_CHARTS = true;
 require __DIR__ . '/partials/head.php';
 $ACTIVE = 'dashboard';
 require __DIR__ . '/partials/topbar.php';
+require __DIR__ . '/partials/report_button.php';
 ?>
 
 <main class="mx-auto max-w-3xl px-4 py-5 space-y-4">

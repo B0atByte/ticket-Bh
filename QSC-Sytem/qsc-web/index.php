@@ -9,6 +9,7 @@ $BODY_CLASS = 'bg-slate-50 text-slate-800 font-sans antialiased pb-28';
 require __DIR__ . '/partials/head.php';
 $ACTIVE = 'form';
 require __DIR__ . '/partials/topbar.php';
+require __DIR__ . '/partials/report_button.php';
 ?>
 
 <main class="mx-auto max-w-3xl px-4 py-5 space-y-4">

@@ -81,6 +81,17 @@ function qsc_init_schema(PDO $pdo): void
     )");
     $pdo->exec("CREATE INDEX IF NOT EXISTS idx_log_created ON activity_log(created_at)");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS issues (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        description TEXT NOT NULL,
+        page        TEXT,
+        username    TEXT,
+        full_name   TEXT,
+        role        TEXT,
+        created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+    )");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_issues_created ON issues(created_at)");
+
     // บัญชีเริ่มต้น admin / admin123
     $pdo->exec("INSERT OR IGNORE INTO users (username, password, full_name, role)
         VALUES ('admin', '\$2y\$10\$ZAIkUOdZ8iGxDBZAX0WJSOtJRAfqU7HDMRwOIlwTsKutKLU0LAioe', 'ผู้ดูแลระบบ', 'admin')");

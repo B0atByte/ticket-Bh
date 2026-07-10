@@ -86,6 +86,7 @@ function qsc_action_meta(string $a): array
         'topic_update' => ['แก้ไขหัวข้อประเมิน',  0xf59e0b],
         'topic_delete' => ['ลบหัวข้อประเมิน',     0xef4444],
         'log_clear'    => ['ล้างบันทึกการใช้งาน', 0x94a3b8],
+        'report_issue' => ['🐞 แจ้งปัญหาใหม่',    0xef4444],
     ];
     return $m[$a] ?? [$a, 0x64748b];
 }
