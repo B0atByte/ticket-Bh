@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:${MYSQL_PORT:-3308}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -26,7 +26,7 @@ services:
     container_name: pr_phpmyadmin
     restart: always
     ports:
-      - "127.0.0.1:8181:80"
+      - "127.0.0.1:${PMA_PORT:-8181}:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
@@ -44,12 +44,13 @@ services:
     container_name: pr_backend
     restart: always
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
     environment:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: development
       PORT: 3000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5174,http://localhost:5173,http://localhost:3456}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
