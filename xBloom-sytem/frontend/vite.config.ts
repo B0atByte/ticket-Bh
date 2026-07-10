@@ -45,7 +45,7 @@ export default defineConfig({
   define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   server: {
     host: true,
-    port: 5173,
+    port: 5176,
     https,
     proxy: {
       "/api": { target: proxyTarget, changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") },
