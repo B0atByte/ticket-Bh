@@ -198,4 +198,17 @@ export const shopeeOrders = mysqlTable("shopee_orders", {
   trackingIdx: index("shopee_tracking_idx").on(t.trackingNo),
 }));
 
-export const schema = { machines, users, warranties, tickets, products, interactions, activityLog, shopeeOrders };
+// Bug/issue reports sent in-app via the floating "แจ้งปัญหา" button.
+// reporterName/Role are null for anonymous reports (e.g. from the login page).
+export const issues = mysqlTable("issues", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  description: text("description").notNull(),
+  page: varchar("page", { length: 500 }),
+  reporterName: varchar("reporter_name", { length: 100 }),
+  reporterRole: varchar("reporter_role", { length: 50 }),
+  createdAt: datetime("created_at", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`),
+}, (t) => ({
+  createdAtIdx: index("issues_created_at_idx").on(t.createdAt),
+}));
+
+export const schema = { machines, users, warranties, tickets, products, interactions, activityLog, shopeeOrders, issues };

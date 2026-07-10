@@ -1,5 +1,6 @@
 import { Outlet, Route, Routes } from "react-router-dom";
 import BottomNav from "./components/BottomNav";
+import ReportBugButton from "./components/ReportBugButton";
 import { Logo } from "./components/ui";
 import LangToggle from "./components/LangToggle";
 import { useI18n } from "./lib/i18n";
@@ -28,19 +29,22 @@ function CustomerLayout() {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Staff backend (own full-width chrome, handles its own auth gate) */}
-      <Route path="/staff/*" element={<StaffApp />} />
+    <>
+      <Routes>
+        {/* Staff backend (own full-width chrome, handles its own auth gate) */}
+        <Route path="/staff/*" element={<StaffApp />} />
 
-      {/* Customer portal */}
-      <Route element={<CustomerLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/warranty" element={<CoveragePage />} />
-        <Route path="/warranty/register" element={<Register />} />
-        <Route path="/support" element={<Report />} />
-        <Route path="/track" element={<Track />} />
-        <Route path="*" element={<Home />} />
-      </Route>
-    </Routes>
+        {/* Customer portal */}
+        <Route element={<CustomerLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/warranty" element={<CoveragePage />} />
+          <Route path="/warranty/register" element={<Register />} />
+          <Route path="/support" element={<Report />} />
+          <Route path="/track" element={<Track />} />
+          <Route path="*" element={<Home />} />
+        </Route>
+      </Routes>
+      <ReportBugButton />
+    </>
   );
 }

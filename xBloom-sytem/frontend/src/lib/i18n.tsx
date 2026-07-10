@@ -29,6 +29,15 @@ const DICT: Record<string, Entry> = {
   "common.close": { th: "ปิด", en: "Close" },
   "common.chooseFile": { th: "เลือกไฟล์", en: "Choose file" },
   "common.choose": { th: "เลือก", en: "Choose" },
+
+  // internal bug-report widget (distinct from the customer warranty-claim flow above)
+  "bugReport.button": { th: "แจ้งบั๊ก", en: "Report a bug" },
+  "bugReport.title": { th: "แจ้งบั๊ก / ปัญหาการใช้งาน", en: "Report a bug" },
+  "bugReport.placeholder": { th: "อธิบายปัญหาที่พบ...", en: "Describe the issue..." },
+  "bugReport.tooShort": { th: "กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร", en: "Please describe the issue in at least 5 characters" },
+  "bugReport.success": { th: "ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ", en: "Report sent — thank you!" },
+  "bugReport.fail": { th: "ส่งแจ้งปัญหาไม่สำเร็จ กรุณาลองใหม่", en: "Failed to send — please try again" },
+  "bugReport.send": { th: "ส่งแจ้งปัญหา", en: "Send report" },
   "mg.warrantyDetail": { th: "รายละเอียดประกัน", en: "Warranty details" },
   "scan.btn": { th: "สแกน SN", en: "Scan SN" },
   "scan.reading": { th: "กำลังอ่าน…", en: "Reading…" },

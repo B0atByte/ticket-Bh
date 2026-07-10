@@ -32,6 +32,9 @@ export const env = {
     .map((s) => s.trim())
     .filter(Boolean),
 
+  // Optional — issue reports post here when set; silently skipped otherwise.
+  DISCORD_WEBHOOK_URL: (process.env.DISCORD_WEBHOOK_URL ?? "").trim(),
+
   // ── Shopee export (all optional) ─────────────────────────
   // Orders always save to MySQL. Google Sheet/Drive mirroring activates only
   // when both a service-account key file and a sheet id are set.

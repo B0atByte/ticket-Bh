@@ -278,6 +278,7 @@ export const api = {
     req<PrefillContact>(`/coverage/${encodeURIComponent(serial)}/contact${verify ? `?verify=${encodeURIComponent(verify)}` : ""}`),
   createTicket: (b: TicketPayload) => req<{ ticketId: string; status: string }>("/tickets", { method: "POST", body: JSON.stringify(b) }),
   track: (q: string) => req<TrackResult>(`/tickets/track/${encodeURIComponent(q)}`),
+  reportIssue: (b: { description: string; page?: string }) => req<{ id: number }>("/issues", { method: "POST", body: JSON.stringify(b) }),
 
   // file upload (public) — returns a fully-qualified URL to the stored file
   async uploadFile(file: File, kind: "image" | "video") {
