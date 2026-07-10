@@ -45,6 +45,7 @@ app.route('/api/users', users)
 app.route('/api/audit', audit)
 app.route('/api/files', files)
 app.route('/api/settings', settings)
+app.route('/api/issues', issues)
 
 app.onError((err, c) => {
   console.error(err)

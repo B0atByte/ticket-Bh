@@ -4215,6 +4215,33 @@ export default function App() {
     <>
       <LoginPage onLogin={handleLogin} siteSettings={siteSettings} />
       <ToastContainer toasts={toasts} remove={id => setToasts(t => t.filter(x => x.id !== id))} />
+
+      {/* Report Issue Button */}
+      <button
+        onClick={() => setReportOpen(true)}
+        className="fixed bottom-4 left-4 z-40 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold pl-3 pr-4 py-2.5 rounded-full shadow-lg shadow-red-600/30 transition-colors"
+      >
+        <Bug size={18} />
+        แจ้งปัญหา
+      </button>
+
+      <Modal open={reportOpen} title="แจ้งปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportDesc(''); } }}
+        footer={
+          <div className="flex gap-2">
+            <button onClick={() => { setReportOpen(false); setReportDesc(''); }} disabled={reportSubmitting}
+              className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
+              ยกเลิก
+            </button>
+            <button onClick={handleReportIssue} disabled={reportSubmitting}
+              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-red-600/20">
+              {reportSubmitting && <Loader2 size={14} className="animate-spin" />}
+              ส่งแจ้งปัญหา
+            </button>
+          </div>
+        }>
+        <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
+          placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
+      </Modal>
     </>
   );
 

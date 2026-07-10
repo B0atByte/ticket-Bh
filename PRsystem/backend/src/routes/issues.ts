@@ -1,12 +1,21 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
-import { authMiddleware } from '../middleware/auth.js'
+import { verifyToken } from '../lib/jwt.js'
 import { parseBody } from '../lib/validate.js'
 import { discordReportIssue } from '../lib/discord.js'
 
 const issues = new Hono()
-issues.use('*', authMiddleware)
+
+function getOptionalUser(c: any) {
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return null
+  try {
+    return verifyToken(auth.slice(7))
+  } catch {
+    return null
+  }
+}
 
 const createIssueSchema = z.object({
   description: z.string().min(5, 'กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร').max(2000),
@@ -14,7 +23,7 @@ const createIssueSchema = z.object({
 })
 
 issues.post('/', async (c) => {
-  const user = c.get('user')
+  const user = getOptionalUser(c)
 
   const result = await parseBody(c, createIssueSchema)
   if (!(result as any).data) return result as unknown as Response
@@ -24,8 +33,8 @@ issues.post('/', async (c) => {
     data: {
       description,
       page: page ?? null,
-      reporterName: user.name,
-      reporterRole: user.role,
+      reporterName: user?.name ?? null,
+      reporterRole: user?.role ?? null,
     },
   })
 
