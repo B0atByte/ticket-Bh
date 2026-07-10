@@ -41,7 +41,7 @@ async function notifyDiscord(issue: {
   }
 }
 
-export async function create(reporterId: bigint, input: CreateIssueInput) {
+export async function create(reporterId: bigint | null, input: CreateIssueInput) {
   const issue = await prisma.issue.create({
     data: {
       reporterId,

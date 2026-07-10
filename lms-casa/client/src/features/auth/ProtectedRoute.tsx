@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { ReportIssueButton } from '../issues/ReportIssueButton';
 import { me } from './auth.api';
 import { useAuthStore } from './auth.store';
 
@@ -30,9 +29,6 @@ export function ProtectedRoute() {
       <Loader2 className="h-6 w-6 animate-spin text-primary" />
     </div>
   ) : (
-    <>
-      <Outlet />
-      <ReportIssueButton />
-    </>
+    <Outlet />
   );
 }

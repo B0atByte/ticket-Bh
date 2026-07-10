@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
 import { ProtectedRoute } from './features/auth/ProtectedRoute';
+import { ReportIssueButton } from './features/issues/ReportIssueButton';
 import { AppShell } from './layout/AppShell';
 import { LearningShell } from './layout/LearningShell';
 
@@ -32,6 +33,7 @@ function PageFallback() {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<LoginPage />} />
@@ -67,5 +69,7 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    <ReportIssueButton />
+    </>
   );
 }

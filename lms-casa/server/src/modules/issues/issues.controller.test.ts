@@ -41,12 +41,15 @@ describe('issues.controller', () => {
     expect(svc.create).not.toHaveBeenCalled();
   });
 
-  it('throws unauthorized when req.auth is missing', async () => {
+  it('creates an anonymous issue when req.auth is missing', async () => {
+    svc.create.mockResolvedValueOnce({ id: 2n });
     const res = mockRes();
     const req = { body: { description: 'ปุ่มบันทึกกดไม่ได้' } };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await expect(ctrl.create(req as any, res as any)).rejects.toThrow();
-    expect(svc.create).not.toHaveBeenCalled();
+    await ctrl.create(req as any, res as any);
+
+    expect(svc.create).toHaveBeenCalledWith(null, { description: 'ปุ่มบันทึกกดไม่ได้' });
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 });

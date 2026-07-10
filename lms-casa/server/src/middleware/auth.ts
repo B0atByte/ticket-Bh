@@ -76,6 +76,32 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   next();
 };
 
+// Best-effort auth: sets req.auth when a valid session is present, but never
+// blocks the request — for endpoints anonymous users may also hit (e.g. issue reports).
+export const optionalAuth: RequestHandler = async (req, _res, next) => {
+  const token = extractToken(req);
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const payload = verifyAccessToken(token);
+    const sessionId = BigInt(payload.sid);
+    const session = await prisma.refreshToken.findUnique({
+      where: { id: sessionId },
+      select: { revokedAt: true, expiresAt: true },
+    });
+    if (session && !session.revokedAt && session.expiresAt.getTime() >= Date.now()) {
+      req.auth = { userId: payload.sub, roles: payload.roles, perms: payload.perms };
+    }
+  } catch {
+    // invalid/expired token — proceed as anonymous
+  }
+
+  next();
+};
+
 export const requireRole =
   (...allowed: string[]): RequestHandler =>
   (req, _res, next) => {
