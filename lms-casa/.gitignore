@@ -23,10 +23,11 @@ server/prisma/migrations/dev.db*
 # Uploads
 server/uploads/
 server/storage/
+server/report-exports/
 
 # Docker volumes (local)
 data/
 
 # SonarQube scanner work dir + local reports
 .scannerwork/
-reports/
+/reports/
