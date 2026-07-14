@@ -1,4 +1,4 @@
-import { LogOut, RefreshCw, Search } from 'lucide-react'
+import { AlertTriangle, ChevronDown, LayoutDashboard, LogOut, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { clearToken, fetchIssues, type Issue, type SourceStatus } from '../lib/api'
 
@@ -20,6 +20,24 @@ function formatTime(iso: string): string {
   return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+function isWithinDays(iso: string, days: number): boolean {
+  const d = new Date(iso).getTime()
+  if (Number.isNaN(d)) return false
+  return Date.now() - d <= days * 24 * 60 * 60 * 1000
+}
+
+function isToday(iso: string): boolean {
+  const d = new Date(iso)
+  const now = new Date()
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  )
+}
+
+type DateFilter = 'all' | 'today' | '7d' | '30d'
+
 export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [issues, setIssues] = useState<Issue[]>([])
   const [sources, setSources] = useState<SourceStatus[]>([])
@@ -27,6 +45,8 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [systemFilter, setSystemFilter] = useState('all')
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
+  const [statusExpanded, setStatusExpanded] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -53,6 +73,9 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
   const filtered = useMemo(() => {
     return issues.filter((issue) => {
       if (systemFilter !== 'all' && issue.system !== systemFilter) return false
+      if (dateFilter === 'today' && !isToday(issue.createdAt)) return false
+      if (dateFilter === '7d' && !isWithinDays(issue.createdAt, 7)) return false
+      if (dateFilter === '30d' && !isWithinDays(issue.createdAt, 30)) return false
       if (!search.trim()) return true
       const q = search.toLowerCase()
       return (
@@ -61,9 +84,39 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
         (issue.reporterName ?? '').toLowerCase().includes(q)
       )
     })
-  }, [issues, search, systemFilter])
+  }, [issues, search, systemFilter, dateFilter])
 
   const systems = useMemo(() => Array.from(new Set(issues.map((i) => i.system))), [issues])
+
+  const stats = useMemo(
+    () => ({
+      total: issues.length,
+      today: issues.filter((i) => isToday(i.createdAt)).length,
+      thisWeek: issues.filter((i) => isWithinDays(i.createdAt, 7)).length,
+      systemsReporting: systems.length,
+    }),
+    [issues, systems],
+  )
+
+  const okCount = sources.filter((s) => s.ok).length
+  const totalSources = sources.length
+  const failedSources = sources.filter((s) => !s.ok)
+  const connectionTone =
+    totalSources === 0 || okCount === totalSources
+      ? 'good'
+      : okCount === 0
+        ? 'critical'
+        : 'warning'
+  const connectionStyles: Record<string, string> = {
+    good: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    warning: 'bg-amber-50 text-amber-800 border-amber-200',
+    critical: 'bg-red-50 text-red-800 border-red-200',
+  }
+  const connectionDot: Record<string, string> = {
+    good: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    critical: 'bg-red-500',
+  }
 
   function handleLogout() {
     clearToken()
@@ -73,10 +126,16 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Issues Dashboard</h1>
-            <p className="text-sm text-slate-500">รวมรายการแจ้งปัญหาจากทั้ง 5 ระบบ</p>
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <LayoutDashboard size={18} />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-slate-900">Issues Dashboard</h1>
+              <p className="text-xs text-slate-500">รวมรายการแจ้งปัญหาจากทั้ง 5 ระบบ</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -97,25 +156,63 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
           </div>
         </div>
 
-        {sources.some((s) => !s.ok) && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {sources
-              .filter((s) => !s.ok)
-              .map((s) => (
-                <span key={s.system} className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-700">
+        {/* Connection status */}
+        <div
+          className={`mb-4 rounded-xl border px-4 py-2.5 text-sm ${connectionStyles[connectionTone]}`}
+        >
+          <button
+            onClick={() => setStatusExpanded((v) => !v)}
+            disabled={failedSources.length === 0}
+            className="flex w-full items-center gap-2 text-left disabled:cursor-default"
+          >
+            <span className={`h-2 w-2 shrink-0 rounded-full ${connectionDot[connectionTone]}`} />
+            <span className="font-medium">
+              {connectionTone === 'good'
+                ? `เชื่อมต่อปกติ ${okCount}/${totalSources} ระบบ`
+                : `เชื่อมต่อได้บางส่วน ${okCount}/${totalSources} ระบบ`}
+            </span>
+            {failedSources.length > 0 && (
+              <ChevronDown
+                size={14}
+                className={`ml-auto shrink-0 transition-transform ${statusExpanded ? 'rotate-180' : ''}`}
+              />
+            )}
+          </button>
+          {statusExpanded && failedSources.length > 0 && (
+            <ul className="mt-2 space-y-1 border-t border-current/20 pt-2">
+              {failedSources.map((s) => (
+                <li key={s.system} className="flex items-center gap-1.5 text-xs">
+                  <AlertTriangle size={12} className="shrink-0" />
                   {s.system}: ดึงข้อมูลไม่สำเร็จ{s.error ? ` (${s.error})` : ''}
-                </span>
+                </li>
               ))}
-          </div>
-        )}
+            </ul>
+          )}
+        </div>
 
+        {/* KPI tiles */}
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'ทั้งหมด', value: stats.total },
+            { label: 'วันนี้', value: stats.today },
+            { label: 'สัปดาห์นี้', value: stats.thisWeek },
+            { label: 'ระบบที่มีรายการ', value: `${stats.systemsReporting}/${totalSources || 5}` },
+          ].map((tile) => (
+            <div key={tile.label} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs text-slate-500">{tile.label}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{tile.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
         <div className="mb-4 flex flex-wrap gap-3">
           <div className="relative min-w-[200px] flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหา..."
+              placeholder="ค้นหาปัญหา..."
               className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-500"
             />
           </div>
@@ -130,6 +227,16 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
                 {s}
               </option>
             ))}
+          </select>
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value as DateFilter)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
+          >
+            <option value="all">ทุกวันที่</option>
+            <option value="today">วันนี้</option>
+            <option value="7d">7 วันล่าสุด</option>
+            <option value="30d">30 วันล่าสุด</option>
           </select>
         </div>
 
