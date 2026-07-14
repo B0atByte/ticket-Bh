@@ -9,7 +9,7 @@ services:
           -d date.timezone=Asia/Bangkok
           -S 0.0.0.0:80 -t /var/www/html
     ports:
-      - "8080:80"
+      - "${WEB_PORT:-8080}:80"
     volumes:
       - ./:/var/www/html          # โค้ด
       - qsc_data:/data            # ไฟล์ฐานข้อมูล SQLite (อยู่นอก web root)
@@ -20,7 +20,7 @@ services:
       # แจ้งเตือน Discord — ใส่ webhook URL ของตัวเอง (ปล่อยว่างเพื่อปิด)
       DISCORD_WEBHOOK: ""
       # Shared secret ที่ต้องแนบใน header X-Dashboard-Key เพื่อเรียก get_issues.php (ใช้โดย issues-dashboard)
-      DASHBOARD_API_KEY: ""
+      DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-}
     restart: unless-stopped
 
 volumes:
