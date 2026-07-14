@@ -13,3 +13,9 @@ define('DB_PATH', getenv('DB_PATH') ?: '/data/qsc.sqlite');
 define('DISCORD_WEBHOOK', getenv('DISCORD_WEBHOOK') !== false
     ? getenv('DISCORD_WEBHOOK')
     : '');
+
+// ===========================================================
+//  Dashboard API key — ต้องแนบ header X-Dashboard-Key ให้ตรงกัน
+//  เพื่อเรียก get_issues.php (ใช้โดย issues-dashboard เท่านั้น)
+// ===========================================================
+define('DASHBOARD_API_KEY', getenv('DASHBOARD_API_KEY') ?: '');

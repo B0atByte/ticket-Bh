@@ -55,7 +55,29 @@ async function notifyDiscord(issue: {
   }
 }
 
+function checkDashboardKey(c: { req: { header: (name: string) => string | undefined } }): boolean {
+  const configured = process.env.DASHBOARD_API_KEY
+  if (!configured) return false
+  return c.req.header('X-Dashboard-Key') === configured
+}
+
 const router = new Hono()
+
+router.get('/', async (c) => {
+  if (!checkDashboardKey(c)) {
+    throw new HTTPException(process.env.DASHBOARD_API_KEY ? 401 : 503, {
+      message: process.env.DASHBOARD_API_KEY ? 'Unauthorized' : 'Dashboard API not configured',
+    })
+  }
+
+  const limit = Math.min(Math.max(Number(c.req.query('limit')) || 100, 1), 500)
+  const issues = await prisma.issue.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+
+  return c.json({ system: 'Bhlogisticssystem', issues })
+})
 
 router.post('/', authRateLimit, async (c) => {
   const body = await c.req.json().catch(() => ({}))

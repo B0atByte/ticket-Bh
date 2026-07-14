@@ -1,6 +1,7 @@
 import type { RequestHandler, Request } from 'express';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { prisma } from '../config/db.js';
+import { env } from '../config/env.js';
 import { verifyAccessToken, type AccessTokenPayload } from '../modules/auth/tokens.js';
 import { ACCESS_TOKEN_COOKIE } from '../modules/auth/cookies.js';
 import { HttpError } from '../utils/httpError.js';
@@ -99,6 +100,19 @@ export const optionalAuth: RequestHandler = async (req, _res, next) => {
     // invalid/expired token — proceed as anonymous
   }
 
+  next();
+};
+
+// Server-to-server auth for the internal issues-dashboard aggregator — unrelated to user sessions.
+export const dashboardAuth: RequestHandler = (req, _res, next) => {
+  if (!env.DASHBOARD_API_KEY) {
+    next(new HttpError(503, 'SERVICE_UNAVAILABLE', 'Dashboard API not configured'));
+    return;
+  }
+  if (req.header('x-dashboard-key') !== env.DASHBOARD_API_KEY) {
+    next(HttpError.unauthorized());
+    return;
+  }
   next();
 };
 

@@ -11,6 +11,7 @@
 | [lms-casa](./lms-casa) | Learning Management System สำหรับเทรนพนักงานและสอบ รองรับผู้ใช้ 500–5,000 คน | React, Node.js, Prisma |
 | [xBloom-sytem](./xBloom-sytem) | ระบบจัดการประกันและงานบริการ xBloom มี Customer Portal และ Staff Backend | Hono, Drizzle ORM, MySQL, React |
 | [QSC-Sytem](./QSC-Sytem) | เว็บแอปตรวจประเมินมาตรฐานสาขา (QSC) แบบ Yes/No พร้อม Dashboard | PHP, SQLite |
+| [issues-dashboard](./issues-dashboard) | Dashboard กลาง รวมรายการ "แจ้งปัญหา" จากทั้ง 5 ระบบข้างต้นมาแสดงในหน้าเดียว (read-only) | Hono, React, Vite |
 
 ## หมายเหตุ
 

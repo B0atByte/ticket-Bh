@@ -7,6 +7,32 @@ import { discordReportIssue } from '../lib/discord.js'
 
 const issues = new Hono()
 
+function checkDashboardKey(c: any): boolean {
+  const configured = process.env.DASHBOARD_API_KEY
+  if (!configured) return false
+  return c.req.header('X-Dashboard-Key') === configured
+}
+
+issues.get('/', async (c) => {
+  if (!checkDashboardKey(c)) {
+    return c.json(
+      { error: process.env.DASHBOARD_API_KEY ? 'Unauthorized' : 'Dashboard API not configured' },
+      process.env.DASHBOARD_API_KEY ? 401 : 503
+    )
+  }
+
+  const limit = Math.min(Math.max(Number(c.req.query('limit')) || 100, 1), 500)
+  const list = await prisma.issue.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+
+  return c.json({
+    system: 'PRsystem',
+    issues: list,
+  })
+})
+
 function getOptionalUser(c: any) {
   const auth = c.req.header('Authorization')
   if (!auth?.startsWith('Bearer ')) return null

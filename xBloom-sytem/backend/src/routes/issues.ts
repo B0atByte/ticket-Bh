@@ -1,3 +1,4 @@
+import { desc } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { db } from "../db/client.js";
@@ -8,6 +9,25 @@ import { optionalAuth } from "../middleware/auth.js";
 import type { AppEnv } from "../types.js";
 
 export const issueRoutes = new Hono<AppEnv>();
+
+issueRoutes.get("/", async (c) => {
+  if (!env.DASHBOARD_API_KEY) {
+    return c.json({ error: "Dashboard API not configured" }, 503);
+  }
+  if (c.req.header("X-Dashboard-Key") !== env.DASHBOARD_API_KEY) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const limit = Math.min(Math.max(Number(c.req.query("limit")) || 100, 1), 500);
+  const rows = await db
+    .select()
+    .from(issues)
+    .orderBy(desc(issues.createdAt))
+    .limit(limit);
+
+  return c.json({ system: "xBloom", issues: rows });
+});
+
 issueRoutes.use("*", optionalAuth);
 
 const createIssue = z.object({

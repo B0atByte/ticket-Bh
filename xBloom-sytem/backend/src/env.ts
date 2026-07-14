@@ -35,6 +35,9 @@ export const env = {
   // Optional — issue reports post here when set; silently skipped otherwise.
   DISCORD_WEBHOOK_URL: (process.env.DISCORD_WEBHOOK_URL ?? "").trim(),
 
+  // Shared secret required in the X-Dashboard-Key header for GET /issues (used by issues-dashboard)
+  DASHBOARD_API_KEY: (process.env.DASHBOARD_API_KEY ?? "").trim(),
+
   // ── Shopee export (all optional) ─────────────────────────
   // Orders always save to MySQL. Google Sheet/Drive mirroring activates only
   // when both a service-account key file and a sheet id are set.

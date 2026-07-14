@@ -45,6 +45,9 @@ const EnvSchema = z.object({
   // Discord notification on "แจ้งปัญหา" (report issue) submissions — optional, silently skipped if unset
   DISCORD_WEBHOOK_URL: z.string().optional().default(''),
 
+  // Shared secret required in the X-Dashboard-Key header for GET /api/v1/issues (used by issues-dashboard)
+  DASHBOARD_API_KEY: z.string().optional().default(''),
+
   // === AI question generation (optional) ===
   // Priority: DeepSeek → OpenAI → local fallback
   DEEPSEEK_API_KEY: z.string().optional().default(''),

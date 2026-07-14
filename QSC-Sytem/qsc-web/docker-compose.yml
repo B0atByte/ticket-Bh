@@ -19,6 +19,8 @@ services:
       PHP_CLI_SERVER_WORKERS: "4"
       # แจ้งเตือน Discord — ใส่ webhook URL ของตัวเอง (ปล่อยว่างเพื่อปิด)
       DISCORD_WEBHOOK: ""
+      # Shared secret ที่ต้องแนบใน header X-Dashboard-Key เพื่อเรียก get_issues.php (ใช้โดย issues-dashboard)
+      DASHBOARD_API_KEY: ""
     restart: unless-stopped
 
 volumes:

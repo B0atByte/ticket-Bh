@@ -41,6 +41,25 @@ async function notifyDiscord(issue: {
   }
 }
 
+export async function list(limit: number) {
+  const rows = await prisma.issue.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    include: {
+      reporter: { select: { firstName: true, lastName: true, email: true } },
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id.toString(),
+    description: row.description,
+    page: row.page,
+    reporterName: row.reporter ? `${row.reporter.firstName} ${row.reporter.lastName}`.trim() : null,
+    reporterRole: null,
+    createdAt: row.createdAt,
+  }));
+}
+
 export async function create(reporterId: bigint | null, input: CreateIssueInput) {
   const issue = await prisma.issue.create({
     data: {
