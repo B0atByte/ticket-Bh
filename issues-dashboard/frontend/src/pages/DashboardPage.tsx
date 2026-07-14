@@ -88,15 +88,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
 
   const systems = useMemo(() => Array.from(new Set(issues.map((i) => i.system))), [issues])
 
-  const stats = useMemo(
-    () => ({
-      total: issues.length,
-      today: issues.filter((i) => isToday(i.createdAt)).length,
-      thisWeek: issues.filter((i) => isWithinDays(i.createdAt, 7)).length,
-      systemsReporting: systems.length,
-    }),
-    [issues, systems],
-  )
+  const stats = useMemo(() => ({ total: issues.length }), [issues])
 
   const okCount = sources.filter((s) => s.ok).length
   const totalSources = sources.length
@@ -190,19 +182,10 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
           )}
         </div>
 
-        {/* KPI tiles */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: 'ทั้งหมด', value: stats.total },
-            { label: 'วันนี้', value: stats.today },
-            { label: 'สัปดาห์นี้', value: stats.thisWeek },
-            { label: 'ระบบที่มีรายการ', value: `${stats.systemsReporting}/${totalSources || 5}` },
-          ].map((tile) => (
-            <div key={tile.label} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs text-slate-500">{tile.label}</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{tile.value}</p>
-            </div>
-          ))}
+        {/* KPI tile */}
+        <div className="mb-4 inline-block rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <p className="text-xs text-slate-500">ทั้งหมด</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.total}</p>
         </div>
 
         {/* Filters */}
