@@ -1,0 +1,16 @@
+{
+  "name": "qsc-web",
+  "version": "1.0.0",
+  "description": "แบบฟอร์มตรวจประเมินมาตรฐานสาขา (QSC) แบบ Yes/No รวม 100 คะแนน\r UI สมัยใหม่ mobile-first (Tailwind + Lucide icons + Chart.js) เก็บข้อมูลใน **SQLite ไฟล์เดียว**\r รันด้วย **Docker container เดียว** กินพื้นที่รวม **~150 MB**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}
