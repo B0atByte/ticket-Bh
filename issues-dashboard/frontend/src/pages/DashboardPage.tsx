@@ -1,5 +1,6 @@
 import { AlertTriangle, ChevronDown, History, LayoutDashboard, ListChecks, LogOut, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import LangToggle from '../components/LangToggle'
 import {
   clearToken,
   fetchActiveIssues,
@@ -9,6 +10,7 @@ import {
   type IssueStatusValue,
   type SourceStatus,
 } from '../lib/api'
+import { useI18n } from '../lib/i18n'
 
 const SYSTEM_COLORS: Record<string, string> = {
   Bhlogisticssystem: 'bg-blue-100 text-blue-800',
@@ -22,18 +24,18 @@ function badgeClass(system: string): string {
   return SYSTEM_COLORS[system] ?? 'bg-slate-100 text-slate-800'
 }
 
-const STATUS_LABELS: Record<IssueStatusValue, string> = {
-  New: 'New',
-  'In Progress': 'In Progress',
-  Resolved: 'Resolved',
+const STATUS_KEYS: Record<IssueStatusValue, string> = {
+  New: 'status.New',
+  'In Progress': 'status.InProgress',
+  Resolved: 'status.Resolved',
 }
 
 const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved']
 
-function formatTime(iso: string): string {
+function formatTime(iso: string, lang: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })
+  return d.toLocaleString(lang === 'en' ? 'en-GB' : 'th-TH', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function isWithinDays(iso: string, days: number): boolean {
@@ -56,6 +58,7 @@ type DateFilter = 'all' | 'today' | '7d' | '30d'
 type Tab = 'active' | 'history'
 
 export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const { t, lang } = useI18n()
   const [tab, setTab] = useState<Tab>('active')
   const [issues, setIssues] = useState<Issue[]>([])
   const [sources, setSources] = useState<SourceStatus[]>([])
@@ -78,7 +81,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
         onLoggedOut()
         return
       }
-      setError(err instanceof Error ? err.message : 'โหลดข้อมูลไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : t('list.loadFail'))
     } finally {
       setLoading(false)
     }
@@ -98,7 +101,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
         onLoggedOut()
         return
       }
-      setError(err instanceof Error ? err.message : 'อัปเดตสถานะไม่สำเร็จ')
+      setError(err instanceof Error ? err.message : t('card.statusUpdateFail'))
     }
   }
 
@@ -158,24 +161,25 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             </div>
             <div>
               <h1 className="text-lg font-semibold text-slate-900">Issues Dashboard</h1>
-              <p className="text-xs text-slate-500">รวมรายการแจ้งปัญหาจากทั้ง 5 ระบบ</p>
+              <p className="text-xs text-slate-500">{t('app.subtitle')}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <LangToggle />
             <button
               onClick={load}
               disabled={loading}
               className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              รีเฟรช
+              {t('header.refresh')}
             </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
             >
               <LogOut size={14} />
-              ออกจากระบบ
+              {t('header.logout')}
             </button>
           </div>
         </div>
@@ -192,8 +196,8 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             <span className={`h-2 w-2 shrink-0 rounded-full ${connectionDot[connectionTone]}`} />
             <span className="font-medium">
               {connectionTone === 'good'
-                ? `เชื่อมต่อปกติ ${okCount}/${totalSources} ระบบ`
-                : `เชื่อมต่อได้บางส่วน ${okCount}/${totalSources} ระบบ`}
+                ? t('conn.good', { ok: okCount, total: totalSources })
+                : t('conn.partial', { ok: okCount, total: totalSources })}
             </span>
             {failedSources.length > 0 && (
               <ChevronDown
@@ -207,7 +211,8 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
               {failedSources.map((s) => (
                 <li key={s.system} className="flex items-center gap-1.5 text-xs">
                   <AlertTriangle size={12} className="shrink-0" />
-                  {s.system}: ดึงข้อมูลไม่สำเร็จ{s.error ? ` (${s.error})` : ''}
+                  {s.system}: {t('conn.failed')}
+                  {s.error ? ` (${s.error})` : ''}
                 </li>
               ))}
             </ul>
@@ -224,7 +229,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
               }`}
             >
               <ListChecks size={14} />
-              New / In Progress
+              {t('tab.active')}
             </button>
             <button
               onClick={() => setTab('history')}
@@ -233,12 +238,12 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
               }`}
             >
               <History size={14} />
-              History
+              {t('tab.history')}
             </button>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
-            <p className="text-xs text-slate-500">ทั้งหมด</p>
+            <p className="text-xs text-slate-500">{t('kpi.total')}</p>
             <p className="text-xl font-semibold text-slate-900">{stats.total}</p>
           </div>
         </div>
@@ -250,7 +255,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหาปัญหา..."
+              placeholder={t('filter.searchPlaceholder')}
               className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-500"
             />
           </div>
@@ -259,7 +264,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             onChange={(e) => setSystemFilter(e.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="all">ทุกระบบ</option>
+            <option value="all">{t('filter.allSystems')}</option>
             {systems.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -271,19 +276,19 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             onChange={(e) => setDateFilter(e.target.value as DateFilter)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500"
           >
-            <option value="all">ทุกวันที่</option>
-            <option value="today">วันนี้</option>
-            <option value="7d">7 วันล่าสุด</option>
-            <option value="30d">30 วันล่าสุด</option>
+            <option value="all">{t('filter.allDates')}</option>
+            <option value="today">{t('filter.today')}</option>
+            <option value="7d">{t('filter.7d')}</option>
+            <option value="30d">{t('filter.30d')}</option>
           </select>
         </div>
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
         {loading && issues.length === 0 ? (
-          <p className="text-sm text-slate-500">กำลังโหลด...</p>
+          <p className="text-sm text-slate-500">{t('list.loading')}</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-slate-500">ไม่มีรายการแจ้งปัญหา</p>
+          <p className="text-sm text-slate-500">{t('list.empty')}</p>
         ) : (
           <div className="space-y-3">
             {filtered.map((issue) => (
@@ -292,17 +297,17 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(issue.system)}`}>
                     {issue.system}
                   </span>
-                  <span className="text-xs text-slate-400">{formatTime(issue.createdAt)}</span>
+                  <span className="text-xs text-slate-400">{formatTime(issue.createdAt, lang)}</span>
                 </div>
                 <p className="mb-2 whitespace-pre-wrap text-sm text-slate-800">{issue.description}</p>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                    {issue.page && <span>หน้า: {issue.page}</span>}
+                    {issue.page && <span>{t('card.page', { page: issue.page })}</span>}
                     <span>
-                      ผู้แจ้ง:{' '}
+                      {t('card.reporter')}
                       {issue.reporterName
                         ? `${issue.reporterName}${issue.reporterRole ? ` (${issue.reporterRole})` : ''}`
-                        : 'ไม่ระบุ'}
+                        : t('card.unknown')}
                     </span>
                   </div>
                   <select
@@ -312,7 +317,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
                   >
                     {ALL_STATUSES.map((s) => (
                       <option key={s} value={s}>
-                        {STATUS_LABELS[s]}
+                        {t(STATUS_KEYS[s])}
                       </option>
                     ))}
                   </select>
