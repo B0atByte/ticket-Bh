@@ -12,6 +12,8 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
+export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved' | 'Closed'
+
 export interface Issue {
   system: string
   id: string
@@ -20,6 +22,7 @@ export interface Issue {
   reporterName: string | null
   reporterRole: string | null
   createdAt: string
+  status: IssueStatusValue
 }
 
 export interface SourceStatus {
@@ -58,6 +61,17 @@ export function login(password: string) {
   })
 }
 
-export function fetchIssues() {
-  return request<{ issues: Issue[]; sources: SourceStatus[] }>('/issues')
+export function fetchActiveIssues() {
+  return request<{ issues: Issue[]; sources: SourceStatus[] }>('/issues/active')
+}
+
+export function fetchHistoryIssues() {
+  return request<{ issues: Issue[]; sources: SourceStatus[] }>('/issues/history')
+}
+
+export function updateIssueStatus(system: string, id: string, status: IssueStatusValue) {
+  return request<{ system: string; issueId: string; status: IssueStatusValue; updatedAt: string }>(
+    `/issues/${encodeURIComponent(system)}/${encodeURIComponent(id)}/status`,
+    { method: 'PATCH', body: JSON.stringify({ status }) }
+  )
 }

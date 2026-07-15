@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { initStatusDb } from './lib/statusDb.js'
 import authRouter from './routes/auth.js'
 import issuesRouter from './routes/issues.js'
 
@@ -24,6 +25,7 @@ function validateEnv() {
 }
 
 validateEnv()
+initStatusDb()
 
 const app = new Hono()
 

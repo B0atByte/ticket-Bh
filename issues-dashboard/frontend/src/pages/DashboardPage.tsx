@@ -1,6 +1,14 @@
-import { AlertTriangle, ChevronDown, LayoutDashboard, LogOut, RefreshCw, Search } from 'lucide-react'
+import { AlertTriangle, ChevronDown, History, LayoutDashboard, ListChecks, LogOut, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { clearToken, fetchIssues, type Issue, type SourceStatus } from '../lib/api'
+import {
+  clearToken,
+  fetchActiveIssues,
+  fetchHistoryIssues,
+  updateIssueStatus,
+  type Issue,
+  type IssueStatusValue,
+  type SourceStatus,
+} from '../lib/api'
 
 const SYSTEM_COLORS: Record<string, string> = {
   Bhlogisticssystem: 'bg-blue-100 text-blue-800',
@@ -13,6 +21,22 @@ const SYSTEM_COLORS: Record<string, string> = {
 function badgeClass(system: string): string {
   return SYSTEM_COLORS[system] ?? 'bg-slate-100 text-slate-800'
 }
+
+const STATUS_LABELS: Record<IssueStatusValue, string> = {
+  New: 'New',
+  'In Progress': 'In Progress',
+  Resolved: 'Resolved',
+  Closed: 'Closed',
+}
+
+const STATUS_COLORS: Record<IssueStatusValue, string> = {
+  New: 'bg-red-100 text-red-800',
+  'In Progress': 'bg-yellow-100 text-yellow-800',
+  Resolved: 'bg-green-100 text-green-800',
+  Closed: 'bg-slate-200 text-slate-700',
+}
+
+const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved', 'Closed']
 
 function formatTime(iso: string): string {
   const d = new Date(iso)
@@ -37,8 +61,10 @@ function isToday(iso: string): boolean {
 }
 
 type DateFilter = 'all' | 'today' | '7d' | '30d'
+type Tab = 'active' | 'history'
 
 export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const [tab, setTab] = useState<Tab>('active')
   const [issues, setIssues] = useState<Issue[]>([])
   const [sources, setSources] = useState<SourceStatus[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,7 +78,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchIssues()
+      const data = tab === 'active' ? await fetchActiveIssues() : await fetchHistoryIssues()
       setIssues(data.issues)
       setSources(data.sources)
     } catch (err) {
@@ -68,7 +94,21 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
 
   useEffect(() => {
     load()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
+
+  async function handleStatusChange(issue: Issue, status: IssueStatusValue) {
+    try {
+      await updateIssueStatus(issue.system, issue.id, status)
+      load()
+    } catch (err) {
+      if (err instanceof Error && err.message === 'Unauthorized') {
+        onLoggedOut()
+        return
+      }
+      setError(err instanceof Error ? err.message : 'อัปเดตสถานะไม่สำเร็จ')
+    }
+  }
 
   const filtered = useMemo(() => {
     return issues.filter((issue) => {
@@ -182,10 +222,33 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
           )}
         </div>
 
-        {/* KPI tile */}
-        <div className="mb-4 inline-block rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <p className="text-xs text-slate-500">ทั้งหมด</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.total}</p>
+        {/* Tabs + KPI tile */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => setTab('active')}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                tab === 'active' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <ListChecks size={14} />
+              New / In Progress
+            </button>
+            <button
+              onClick={() => setTab('history')}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                tab === 'history' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <History size={14} />
+              History
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+            <p className="text-xs text-slate-500">ทั้งหมด</p>
+            <p className="text-xl font-semibold text-slate-900">{stats.total}</p>
+          </div>
         </div>
 
         {/* Filters */}
@@ -233,21 +296,34 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
           <div className="space-y-3">
             {filtered.map((issue) => (
               <div key={`${issue.system}-${issue.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(issue.system)}`}>
                     {issue.system}
                   </span>
                   <span className="text-xs text-slate-400">{formatTime(issue.createdAt)}</span>
                 </div>
                 <p className="mb-2 whitespace-pre-wrap text-sm text-slate-800">{issue.description}</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                  {issue.page && <span>หน้า: {issue.page}</span>}
-                  <span>
-                    ผู้แจ้ง:{' '}
-                    {issue.reporterName
-                      ? `${issue.reporterName}${issue.reporterRole ? ` (${issue.reporterRole})` : ''}`
-                      : 'ไม่ระบุ'}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                    {issue.page && <span>หน้า: {issue.page}</span>}
+                    <span>
+                      ผู้แจ้ง:{' '}
+                      {issue.reporterName
+                        ? `${issue.reporterName}${issue.reporterRole ? ` (${issue.reporterRole})` : ''}`
+                        : 'ไม่ระบุ'}
+                    </span>
+                  </div>
+                  <select
+                    value={issue.status}
+                    onChange={(e) => handleStatusChange(issue, e.target.value as IssueStatusValue)}
+                    className={`rounded-lg border-none px-2.5 py-1 text-xs font-medium outline-none focus:ring-2 focus:ring-slate-400 ${STATUS_COLORS[issue.status]}`}
+                  >
+                    {ALL_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             ))}
