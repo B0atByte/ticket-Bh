@@ -30,6 +30,7 @@ async function notifyDiscord(issue: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        username: issue.systemName,
         embeds: [
           {
             title: `🐞 แจ้งปัญหาใหม่ - ${issue.systemName}`,

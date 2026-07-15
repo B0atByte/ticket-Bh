@@ -25,7 +25,15 @@ issueRoutes.get("/", async (c) => {
     .orderBy(desc(issues.createdAt))
     .limit(limit);
 
-  return c.json({ system: "xBloom", issues: rows });
+  // created_at is stored as a naive UTC datetime string (MySQL "YYYY-MM-DD HH:MM:SS",
+  // no zone marker) — tag it explicitly so consumers like issues-dashboard don't
+  // misread it as their own local time.
+  const withUtcTimestamps = rows.map((r) => ({
+    ...r,
+    createdAt: r.createdAt ? `${r.createdAt.replace(" ", "T")}Z` : r.createdAt,
+  }));
+
+  return c.json({ system: "xBloom", issues: withUtcTimestamps });
 });
 
 issueRoutes.use("*", optionalAuth);
@@ -47,6 +55,7 @@ async function notifyDiscord(issue: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        username: "xBloom",
         embeds: [
           {
             title: "🐞 แจ้งปัญหาใหม่ - xBloom",

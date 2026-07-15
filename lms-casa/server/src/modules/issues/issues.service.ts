@@ -16,6 +16,7 @@ async function notifyDiscord(issue: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        username: 'LMS Casa',
         embeds: [
           {
             title: '🐞 แจ้งปัญหาใหม่ - LMS Casa',

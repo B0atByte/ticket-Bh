@@ -17,8 +17,8 @@ services:
       DB_PATH: /data/qsc.sqlite
       TZ: Asia/Bangkok
       PHP_CLI_SERVER_WORKERS: "4"
-      # แจ้งเตือน Discord — ใส่ webhook URL ของตัวเอง (ปล่อยว่างเพื่อปิด)
-      DISCORD_WEBHOOK: ""
+      # แจ้งเตือน Discord — ใส่ webhook URL ของตัวเองใน .env (ปล่อยว่างเพื่อปิด)
+      DISCORD_WEBHOOK: ${DISCORD_WEBHOOK:-}
       # Shared secret ที่ต้องแนบใน header X-Dashboard-Key เพื่อเรียก get_issues.php (ใช้โดย issues-dashboard)
       DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-}
     restart: unless-stopped

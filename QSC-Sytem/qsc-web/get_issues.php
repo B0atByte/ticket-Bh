@@ -41,8 +41,20 @@ $rows = db()->prepare('
     LIMIT ?
 ');
 $rows->execute([$limit]);
+$issues = $rows->fetchAll();
+
+// created_at is stored via SQLite's datetime('now','localtime'), which resolves to
+// UTC in this container (Alpine's php:8.3-cli-alpine has no tzdata, so TZ=Asia/Bangkok
+// is silently ignored) — tag it explicitly so consumers like issues-dashboard don't
+// misread the naive string as their own local time.
+foreach ($issues as &$issue) {
+    if ($issue['createdAt']) {
+        $issue['createdAt'] = str_replace(' ', 'T', $issue['createdAt']) . 'Z';
+    }
+}
+unset($issue);
 
 echo json_encode([
     'system' => 'QSC-Sytem',
-    'issues' => $rows->fetchAll(),
+    'issues' => $issues,
 ], JSON_UNESCAPED_UNICODE);
