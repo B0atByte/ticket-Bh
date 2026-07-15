@@ -4,10 +4,10 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { NormalizedIssue } from './aggregate.js'
 
-export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved' | 'Closed'
-export const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved', 'Closed']
+export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved'
+export const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved']
 const ACTIVE_STATUSES: IssueStatusValue[] = ['New', 'In Progress']
-const HISTORY_STATUSES: IssueStatusValue[] = ['Resolved', 'Closed']
+const HISTORY_STATUSES: IssueStatusValue[] = ['Resolved']
 
 export interface IssueWithStatus extends NormalizedIssue {
   status: IssueStatusValue

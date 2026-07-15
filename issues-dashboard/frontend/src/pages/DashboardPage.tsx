@@ -26,17 +26,9 @@ const STATUS_LABELS: Record<IssueStatusValue, string> = {
   New: 'New',
   'In Progress': 'In Progress',
   Resolved: 'Resolved',
-  Closed: 'Closed',
 }
 
-const STATUS_COLORS: Record<IssueStatusValue, string> = {
-  New: 'bg-red-100 text-red-800',
-  'In Progress': 'bg-yellow-100 text-yellow-800',
-  Resolved: 'bg-green-100 text-green-800',
-  Closed: 'bg-slate-200 text-slate-700',
-}
-
-const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved', 'Closed']
+const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved']
 
 function formatTime(iso: string): string {
   const d = new Date(iso)
@@ -316,7 +308,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
                   <select
                     value={issue.status}
                     onChange={(e) => handleStatusChange(issue, e.target.value as IssueStatusValue)}
-                    className={`rounded-lg border-none px-2.5 py-1 text-xs font-medium outline-none focus:ring-2 focus:ring-slate-400 ${STATUS_COLORS[issue.status]}`}
+                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 outline-none focus:border-slate-500"
                   >
                     {ALL_STATUSES.map((s) => (
                       <option key={s} value={s}>

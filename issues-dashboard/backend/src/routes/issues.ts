@@ -30,7 +30,7 @@ router.get('/history', async (c) => {
   return c.json({ issues, sources: result.sources })
 })
 
-const statusSchema = z.object({ status: z.enum(['New', 'In Progress', 'Resolved', 'Closed']) })
+const statusSchema = z.object({ status: z.enum(['New', 'In Progress', 'Resolved']) })
 const knownSystems = new Set(sources.map((s) => s.name))
 
 router.patch('/:system/:issueId/status', async (c) => {

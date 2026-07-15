@@ -12,7 +12,7 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved' | 'Closed'
+export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved'
 
 export interface Issue {
   system: string
