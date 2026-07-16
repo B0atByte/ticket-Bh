@@ -9,6 +9,7 @@ $BODY_CLASS = 'bg-slate-50 text-slate-800 font-sans antialiased pb-28';
 require __DIR__ . '/partials/head.php';
 $ACTIVE = 'form';
 require __DIR__ . '/partials/topbar.php';
+$REPORT_BUTTON_HIDE_TRIGGER = true; // ปุ่มลอยจะถูกฝังไว้ในแถบ progress+บันทึกด้านล่างแทน (กัน overlap)
 require __DIR__ . '/partials/report_button.php';
 ?>
 
@@ -83,6 +84,11 @@ require __DIR__ . '/partials/report_button.php';
 <div class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-100"
      style="padding-bottom: env(safe-area-inset-bottom)">
   <div class="mx-auto max-w-3xl px-4 py-2.5 flex items-center gap-3">
+    <button type="button" onclick="document.getElementById('reportIssueModal').classList.remove('hidden')"
+      class="shrink-0 grid place-items-center w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition"
+      aria-label="แจ้งปัญหา">
+      <i data-lucide="bug" class="w-4 h-4" aria-hidden="true"></i>
+    </button>
     <div class="flex-1 min-w-0">
       <div class="flex items-center justify-between text-[11px] font-medium text-slate-500 mb-1.5">
         <span id="answeredText" class="tnum">ตอบแล้ว 0/39</span>

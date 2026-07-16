@@ -1,15 +1,24 @@
 <?php
 /**
- * ปุ่มลอย "แจ้งปัญหา" + modal — include หลัง topbar.php ในทุกหน้าที่ login แล้ว
+ * ปุ่ม "แจ้งปัญหา" (ลอย หรือฝังในแถบอื่น) + modal — include หลัง topbar.php ในทุกหน้าที่ login แล้ว
  * ยิงไปที่ report_issue.php (ไม่บังคับ login)
+ *
+ * หน้าที่มีแถบคงที่ติดขอบล่างอยู่แล้ว (เช่น index.php มีแถบ progress+บันทึก) ให้ตั้ง
+ * $REPORT_BUTTON_HIDE_TRIGGER = true ก่อน include เพื่อไม่ให้ render ปุ่มลอยซ้ำ แล้วฝัง
+ * ปุ่มของตัวเองในแถบนั้นแทน โดยเรียก onclick เดียวกัน:
+ *   document.getElementById('reportIssueModal').classList.remove('hidden')
  */
+$REPORT_BUTTON_HIDE_TRIGGER = $REPORT_BUTTON_HIDE_TRIGGER ?? false;
+$REPORT_BUTTON_BOTTOM = $REPORT_BUTTON_BOTTOM ?? 'bottom-5';
 ?>
+<?php if (!$REPORT_BUTTON_HIDE_TRIGGER): ?>
 <button type="button" onclick="document.getElementById('reportIssueModal').classList.remove('hidden')"
-  class="fixed bottom-5 left-4 z-40 inline-flex items-center gap-2 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white text-sm font-semibold px-4 py-2.5 shadow-lift transition"
+  class="fixed <?= $REPORT_BUTTON_BOTTOM ?> left-4 z-40 inline-flex items-center gap-2 rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-white text-sm font-semibold px-4 py-2.5 shadow-lift transition"
   aria-label="แจ้งปัญหา">
   <i data-lucide="bug" class="w-4 h-4" aria-hidden="true"></i>
   <span class="hidden xs:inline">แจ้งปัญหา</span>
 </button>
+<?php endif; ?>
 
 <div id="reportIssueModal" class="hidden fixed inset-0 z-50 grid place-items-center bg-slate-900/40 px-4">
   <div class="w-full max-w-sm rounded-2xl bg-white shadow-lift border border-slate-100 p-5">
