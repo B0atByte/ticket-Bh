@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite";
-
-// In Docker the API is reachable as the "api" service; for local `npm run dev`
-// it defaults to localhost. Browsers always call same-origin /api, so LAN
-// clients don't need to know the API host (and there's no CORS).
-const proxyTarget = process.env.VITE_PROXY_TARGET || "http://localhost:8080";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 
 // Serve over HTTPS when a cert is present (mounted at ./certs). HTTPS makes the
 // page a secure context, which the LIVE camera scanner (getUserMedia) needs to
@@ -40,15 +35,26 @@ function buildId(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), buildId()],
-  define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
-  server: {
-    host: true,
-    port: 5176,
-    https,
-    proxy: {
-      "/api": { target: proxyTarget, changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") },
+export default defineConfig(({ mode }) => {
+  // In Docker, VITE_PROXY_TARGET is a real container env var and lands in
+  // process.env directly. For local `npm run dev` it only lives in .env.local,
+  // which Vite doesn't inject into process.env for the config file itself —
+  // loadEnv() is what actually reads that file. Browsers always call
+  // same-origin /api, so LAN clients don't need to know the API host (and
+  // there's no CORS).
+  const fileEnv = loadEnv(mode, process.cwd(), "VITE_");
+  const proxyTarget = process.env.VITE_PROXY_TARGET || fileEnv.VITE_PROXY_TARGET || "http://localhost:8080";
+
+  return {
+    plugins: [react(), buildId()],
+    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
+    server: {
+      host: true,
+      port: 5176,
+      https,
+      proxy: {
+        "/api": { target: proxyTarget, changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") },
+      },
     },
-  },
+  };
 });
