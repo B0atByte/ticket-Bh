@@ -4,15 +4,19 @@ import { Icon } from "./Icon";
 import Modal from "./Modal";
 import { Button, TextArea } from "./ui";
 import { api, ApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import { swalToast } from "../lib/swal";
 
 export default function ReportBugButton() {
+  const { user } = useAuth();
   const { t } = useI18n();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  if (!user) return null;
 
   const close = () => {
     if (submitting) return;

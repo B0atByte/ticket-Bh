@@ -11,12 +11,14 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { Textarea } from '../../components/ui/textarea';
+import { useAuthStore } from '../auth/auth.store';
 import { getApiErrorMessage } from '../../lib/api-error';
 import { toastSuccess } from '../../lib/confirm';
 import { alertWarning } from '../../lib/confirm';
 import { createIssue } from './issues.api';
 
 export function ReportIssueButton() {
+  const user = useAuthStore((s) => s.user);
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
@@ -40,6 +42,8 @@ export function ReportIssueButton() {
     }
     mutation.mutate();
   };
+
+  if (!user) return null;
 
   return (
     <>

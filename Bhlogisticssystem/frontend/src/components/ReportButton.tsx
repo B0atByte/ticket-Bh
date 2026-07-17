@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { Bug, Loader2, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
 export function ReportButton() {
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const toast = useToast()
+
+  if (!user) return null
 
   const close = () => {
     if (submitting) return

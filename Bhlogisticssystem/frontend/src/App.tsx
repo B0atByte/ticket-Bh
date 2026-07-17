@@ -37,8 +37,8 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <AppContent />
+          <ReportButton />
         </AuthProvider>
-        <ReportButton />
       </ToastProvider>
     </ThemeProvider>
   )
