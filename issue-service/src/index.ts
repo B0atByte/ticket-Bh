@@ -22,7 +22,7 @@ app.use(
   '/api/issues/*',
   cors({
     origin: allowedOrigins(),
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'X-Dashboard-Key'],
   })
 )

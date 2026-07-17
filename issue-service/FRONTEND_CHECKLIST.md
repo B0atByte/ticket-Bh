@@ -2,13 +2,27 @@
 
 เป้าหมาย: เปลี่ยนแค่ **ปลายทางที่ปุ่มยิง POST ไป** จาก backend ของระบบตัวเองมาที่
 `issue-service` (http://localhost:4003 ตอน dev) — UI/component เดิมไม่ต้องแก้ดีไซน์
-อะไรทั้งสิ้น
+พื้นฐานอะไรทั้งสิ้น **ยกเว้น 2 อย่างที่ต้องเพิ่มเข้าไปจริงตาม spec ใหม่:**
+severity picker (ปุ่มเลือกความเร่งด่วน) และช่องแนบไฟล์ — เพราะ service ฝั่ง
+backend บังคับรับ 2 อย่างนี้แล้ว (severity บังคับ, ไฟล์แนบไม่บังคับแต่ต้องมีช่องให้แนบได้)
 
 ยังไม่ได้แก้ frontend จริงๆ สักระบบ — เอกสารนี้คือ checklist ให้ทำตามทีละระบบ
 
 ## กฎร่วมที่ใช้กับทุกระบบ (อ่านก่อนเริ่ม)
 
-### 1. ห้ามใช้ api client เดิมของระบบยิงไป issue-service
+### 1. ปุ่มต้องอยู่หลัง login เสมอ (เปลี่ยนจากเดิม)
+เดิมทุกระบบ (รวม QSC) ให้แจ้งปัญหาได้แม้ไม่ login — **ตอนนี้เปลี่ยนแล้ว**:
+`issue-service` บังคับรับ `reporterId`/`reporterName` เป็น field จำเป็น (ไม่ใช่
+optional) ถ้าไม่มีคน login อยู่ ก็ไม่มีค่าอะไรจะส่งให้ field นี้ — เพราะงั้น:
+- **Bhlogisticssystem, PRsystem, lms-casa** — ตอนนี้ปุ่มโชว์อยู่แม้ยังไม่ login
+  (ยืนยันแล้วตอนทดสอบ e2e) ต้องซ่อนปุ่มนี้ไว้จนกว่าจะ login เสร็จ
+- **xBloom, QSC-Sytem** — เดิม README เขียนว่า "หลังจาก login" อยู่แล้ว แต่โค้ดจริง
+  ก็ยังไม่บังคับ (README เขียนไว้แต่ logic ไม่เช็ค) ต้องเพิ่ม logic บังคับจริง
+
+วิธีทำ: wrap component เดิมด้วยเงื่อนไข `if (!currentUser) return null` (หรือ
+เทียบเท่าตาม pattern auth ของแต่ละระบบ) ก่อน render ปุ่ม
+
+### 2. ห้ามใช้ api client เดิมของระบบยิงไป issue-service
 ทุกระบบ (ยกเว้น QSC ที่เป็น PHP) มี shared `api` client ที่แนบ auth token ของ
 ระบบตัวเองอัตโนมัติทุก request:
 
@@ -24,38 +38,66 @@
 เปล่าๆ แยกต่างหากเฉพาะสำหรับเรียก issue-service เท่านั้น ห้าม import `api`
 client เดิมมาใช้กับ endpoint นี้
 
-### 2. ต้องส่ง `system` มาด้วยทุกครั้ง (เดิมไม่มี field นี้)
-ค่าต้องตรงกับ `SYSTEMS` ใน `issue-service/src/systems.ts` เป๊ะๆ:
-`"Bhlogisticssystem" | "PRsystem" | "lms-casa" | "xBloom" | "QSC-Sytem"`
+### 3. POST เป็น `multipart/form-data` แล้ว ไม่ใช่ JSON
+เพื่อให้แนบไฟล์ในคำขอเดียวกันได้ — ใช้ `FormData` ไม่ใช่ `JSON.stringify` และ
+**ห้ามตั้ง header `Content-Type` เอง** (browser ต้องเป็นคนใส่ boundary ให้อัตโนมัติ
+ถ้าตั้งเองจะพัง) ฟิลด์ที่ต้องส่งตอนนี้ (ทั้งหมดยกเว้น `page`/`reporterRole`/
+`attachment` บังคับหมด):
 
-### 3. `reporterName`/`reporterRole` — พฤติกรรมเปลี่ยน ต้องส่งเองจาก client แล้ว
-ปัจจุบันทุกระบบ (รวม QSC) ให้ **backend** เติมชื่อ/role ให้อัตโนมัติจาก
-session/JWT ฝั่งเซิร์ฟเวอร์ (ดูใน `issues.ts`/`report_issue.php` เดิมของแต่ละระบบ
-— `c.get('user')` หรือ `current_user()`) เพราะ browser ไม่เคยต้องส่งข้อมูลนี้เอง
+```js
+const fd = new FormData()
+fd.set('system', 'xBloom')                    // ชื่อระบบตัวเองตรงตาม SYSTEMS enum
+fd.set('description', description.trim())
+fd.set('severity', selectedSeverity)           // 'critical' | 'high' | 'normal' — บังคับ
+fd.set('reporterId', currentUser.id)           // บังคับ — ดึงจาก auth state
+fd.set('reporterName', currentUser.name)       // บังคับ
+fd.set('reporterRole', currentUser.role ?? '') // ไม่บังคับ
+fd.set('page', location.pathname)              // ไม่บังคับ
+if (file) fd.set('attachment', file)           // ไม่บังคับ — ดู field name ต้องชื่อ 'attachment' เป๊ะๆ
 
-พอเปลี่ยนไปยิง cross-origin ตรงไปที่ issue-service ตรงๆ **service กลางไม่รู้จัก
-session ของระบบต้นทางเลย** — ถ้าไม่แก้ ทุก report จะกลายเป็น "ไม่ระบุ" หมด
-ต้องดึงชื่อ/role จาก auth state ที่ frontend มีอยู่แล้ว (เช่น context/store ที่ใช้
-แสดงชื่อผู้ใช้ใน topbar) แล้วใส่ในตัว payload เอง — ไม่บังคับส่ง (ระบบยังใช้งานได้
-ถ้าไม่ login) แต่ถ้า login อยู่ควรส่งเพื่อไม่ให้เสียฟีเจอร์เดิม
+await fetch(`${ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd })
+```
 
-### 4. ตั้งค่า origin ของทุกระบบใน `issue-service`
-`issue-service/.env` → `ALLOWED_ORIGINS` ต้องมี origin ของทุกระบบที่จะยิงมา
-(dev ports: `5173` Bhlogistics, `5174` PRsystem, `5175` lms-casa, `5176` xBloom,
-`8083` QSC) — ค่า default ใน `.env.example` มีครบอยู่แล้ว แค่เติม production
-domain เพิ่มตอน deploy จริง
+### 4. ต้องเพิ่ม Severity picker ในฟอร์ม (UI ใหม่)
+ปุ่มเลือก 3 ระดับ เห็นเด่นชัด ไม่ใช่ dropdown ซ่อน — ใช้ label/สี/emoji นี้ให้ตรงกับที่
+`issue-service` ส่งกลับมา (จะได้ตรงกับที่ admin เห็นใน Discord/dashboard):
 
-### 5. GET เดิมของแต่ละระบบยังไม่ต้องปิด
+| value | emoji | label | คำอธิบายสั้นๆ ที่ควรโชว์ |
+|---|---|---|---|
+| `critical` | 🔴 | ด่วนที่สุด | ระบบพังถาวร ทำงานต่อไม่ได้เลย (login ไม่ได้, จ่ายเงินไม่ได้) |
+| `high` | 🟡 | ด่วน | ระบบทำงานได้บางส่วน แต่กระทบงานหลัก (พิมพ์ใบเสร็จไม่ได้) |
+| `normal` | 🟢 | ทั่วไป | ปัญหาทั่วไป/ข้อเสนอแนะ (สะกดผิด, ปุ่มเบี้ยว) |
+
+### 5. ช่องแนบไฟล์ (ไม่บังคับ แต่ต้องมีให้เลือก)
+`<input type="file" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf">`
+— จำกัด client-side ไว้ก่อนก็ได้ (สูงสุด 10MB, ชนิดไฟล์ตามด้านบน) แต่ตัว service
+เองก็ validate ซ้ำอยู่แล้ว (reject ด้วย `400` ถ้าไม่ผ่าน) ไม่ต้องเชื่อ client
+ฝ่ายเดียว
+
+### 6. `reporterId` คืออะไร
+เป็น string อะไรก็ได้ที่ระบบต้นทางใช้ระบุตัวผู้ใช้แบบ **คงที่ไม่เปลี่ยนไปมา** (ใช้
+join กับ `system` เป็น compound key ตอนดึง "ประวัติของฉัน") ปกติใช้ user id ภายใน
+ระบบ (เช่น Prisma `id`/cuid) ไม่แนะนำใช้ email ตรงๆ เพราะเดางกกว่า — ดูหัวข้อ
+Security ใน README
+
+### 7. GET เดิมของแต่ละระบบยังไม่ต้องปิด
 `issues-dashboard` ยังดึงจาก 5 endpoint เดิมอยู่ (ยังไม่ได้สลับ — เป็น step ถัดไป
 คนละ step) เพราะงั้นตาราง `issues` เดิมของแต่ละระบบต้องยังอยู่และ endpoint GET
 เดิมต้องยังทำงานได้ปกติระหว่างช่วงเปลี่ยนผ่าน — งานนี้แค่เปลี่ยนปลายทางของ **ปุ่ม
 POST** เท่านั้น ไม่ใช่ตัด GET ทิ้ง
 
+### 8. "ประวัติการแจ้งปัญหา" (tracking) — ยังไม่ได้ออกแบบ UI ส่วนนี้
+Backend พร้อมแล้ว (`GET /api/issues/mine?system=...&reporterId=...` คืน
+รายการ + timeline สถานะเต็มของแต่ละ issue) แต่ยังไม่มี component/หน้าจอ
+ฝั่ง frontend ระบบไหนเรียกใช้ endpoint นี้เลย — เป็นงานแยกต่างหาก ยังไม่อยู่ใน
+checklist ทดสอบขั้นต่ำรอบนี้ (แค่ต่อปุ่มส่งให้ผ่านก่อน)
+
 ---
 
 ## Bhlogisticssystem
 
-**ไฟล์:** `Bhlogisticssystem/frontend/src/components/ReportButton.tsx`
+**ไฟล์:** `Bhlogisticssystem/frontend/src/components/ReportButton.tsx` — mount
+ที่ `App.tsx:41` แบบไม่มีเงื่อนไข login เลย ต้องเพิ่ม guard ก่อน (ดูข้อ 1)
 
 ปัจจุบัน (บรรทัด ~26):
 ```ts
@@ -65,28 +107,30 @@ await api.post('/issues', {
 })
 ```
 
-เปลี่ยนเป็น (fetch เปล่า ไม่ใช้ `api` client เดิม):
+เปลี่ยนเป็น (fetch เปล่า + FormData, ไม่ใช้ `api` client เดิม):
 ```ts
-await fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    system: 'Bhlogisticssystem',
-    description: description.trim(),
-    page: window.location.pathname,
-    reporterName: currentUser?.name,   // ดึงจาก auth context ที่มีอยู่แล้ว
-    reporterRole: currentUser?.role,
-  }),
-})
+const fd = new FormData()
+fd.set('system', 'Bhlogisticssystem')
+fd.set('description', description.trim())
+fd.set('severity', severity) // จาก state ของ severity picker ที่เพิ่มใหม่
+fd.set('reporterId', currentUser.id)
+fd.set('reporterName', currentUser.name)
+if (currentUser.role) fd.set('reporterRole', currentUser.role)
+fd.set('page', window.location.pathname)
+if (file) fd.set('attachment', file)
+
+await fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd })
 ```
-- เพิ่ม `VITE_ISSUE_SERVICE_URL=http://localhost:4003` ใน `frontend/.env` (สร้างถ้ายังไม่มี)
-- ต้อง import/ดึง current user object เข้ามาใน component นี้เพิ่ม (เดิมไม่ได้ใช้)
+- เพิ่ม `VITE_ISSUE_SERVICE_URL=http://localhost:4003` ใน `frontend/.env`
+- ต้อง import current user object เข้ามาใน component นี้เพิ่ม (เดิมไม่ได้ใช้)
+- เพิ่ม severity picker UI + `<input type="file">` ในตัว modal เดิม
+- ต้องเพิ่ม guard `if (!currentUser) return null` ก่อน render ปุ่ม (ตอนนี้โชว์แม้ยังไม่ login)
 - error handling เดิม (try/catch, toast) ใช้ต่อได้เลย ไม่ต้องแก้
 
 ## PRsystem
 
 **ไฟล์:** `PRsystem/app/src/App.tsx` — **มี 2 จุด** (บรรทัด ~4197 และปุ่มซ้ำอีกจุดราว
-บรรทัด ~4300s ดูเหมือนเป็น component คนละ role แต่โค้ดซ้ำกัน เช็คทั้งคู่)
+บรรทัด ~4300s) ทั้งสองจุดโชว์ปุ่มแม้ยังไม่ login (login page อยู่ใน render tree เดียวกัน)
 
 ปัจจุบัน:
 ```ts
@@ -95,27 +139,29 @@ await api.issues.create({ description: reportDesc.trim(), page });
 
 เปลี่ยนเป็น (ไม่ใช้ `api.issues.create` เดิมที่แนบ Bearer token):
 ```ts
-await fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    system: 'PRsystem',
-    description: reportDesc.trim(),
-    page,
-    reporterName: currentUser?.name,
-    reporterRole: currentUser?.role,
-  }),
-});
+const fd = new FormData();
+fd.set('system', 'PRsystem');
+fd.set('description', reportDesc.trim());
+fd.set('severity', reportSeverity);
+fd.set('reporterId', currentUser.id);
+fd.set('reporterName', currentUser.name);
+if (currentUser.role) fd.set('reporterRole', currentUser.role);
+fd.set('page', page);
+if (reportFile) fd.set('attachment', reportFile);
+
+await fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd });
 ```
 - เพิ่ม `VITE_ISSUE_SERVICE_URL=http://localhost:4003` ใน `app/.env`
-- พิจารณาทำเป็น helper function เดียว (เช่น `reportIssueToCentral()`) ใช้ร่วมกัน
-  2 จุด แทนก็อปโค้ดซ้ำ — แก้ตอนนี้เลยจะดีกว่า เพราะจุดเดิมก็ซ้ำกันอยู่แล้ว
+- ทำเป็น helper function เดียว (เช่น `reportIssueToCentral()`) ใช้ร่วมกัน 2 จุด
+  แทนก็อปโค้ดซ้ำ — ควรทำตอนนี้เลยเพราะต้องเพิ่ม severity+file state ทั้งคู่อยู่แล้ว
+- ต้องเพิ่ม guard ไม่ให้ทั้ง 2 จุด render ตอนยังไม่ login (ตอนนี้ไม่มี guard เลย)
 - `api.issues.create` เดิมใน `lib/api.ts:94` ปล่อยไว้เฉยๆ ก่อนได้ (ยังใช้ backend
   เดิม endpoint `/api/issues` POST ของ PRsystem เอง — แค่ไม่มีใครเรียกใช้แล้ว)
 
 ## lms-casa
 
-**ไฟล์:** `lms-casa/client/src/features/issues/issues.api.ts`
+**ไฟล์:** `lms-casa/client/src/features/issues/issues.api.ts` + `ReportIssueButton.tsx`
+— mount ที่ `App.tsx:72` นอก `<Routes>` เลยโชว์ทุกหน้ารวม `/login`
 
 ปัจจุบัน:
 ```ts
@@ -132,29 +178,38 @@ export function createIssue(input: { description: string; page?: string }): Prom
 ```ts
 export function createIssue(input: {
   description: string
-  page?: string
-  reporterName?: string
+  severity: 'critical' | 'high' | 'normal'
+  reporterId: string
+  reporterName: string
   reporterRole?: string
+  page?: string
+  attachment?: File
 }): Promise<void> {
-  return fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system: 'lms-casa', ...input }),
-  }).then((res) => {
-    if (!res.ok) throw new Error('report failed')
-  })
+  const fd = new FormData()
+  fd.set('system', 'lms-casa')
+  fd.set('description', input.description)
+  fd.set('severity', input.severity)
+  fd.set('reporterId', input.reporterId)
+  fd.set('reporterName', input.reporterName)
+  if (input.reporterRole) fd.set('reporterRole', input.reporterRole)
+  if (input.page) fd.set('page', input.page)
+  if (input.attachment) fd.set('attachment', input.attachment)
+
+  return fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd })
+    .then((res) => { if (!res.ok) throw new Error('report failed') })
 }
 ```
 - เพิ่ม `VITE_ISSUE_SERVICE_URL=http://localhost:4003` ใน `client/.env`
-- `ReportIssueButton.tsx` ต้องส่ง `reporterName`/`reporterRole` เข้ามาตอนเรียก
-  `createIssue(...)` ด้วย (ดึงจาก auth store ที่มีอยู่แล้ว เช่น `useAuth().user`)
+- `ReportIssueButton.tsx` ต้องส่ง `reporterId`/`reporterName`/`reporterRole`
+  (ดึงจาก auth store ที่มีอยู่แล้ว เช่น `useAuth().user`) + severity picker + file input ใหม่
+- ต้องเพิ่ม guard ไม่ให้ปุ่ม render ตอนยังไม่ login (ย้ายจากนอก `<Routes>` เข้าไปในเลย์เอาต์ที่มีแค่ authenticated routes หรือเช็ค `useAuth().user` ก่อน render)
 - `getApiErrorMessage(err, ...)` ที่ใช้ตอน `onError` เดิมออกแบบมาสำหรับ axios
   error shape — เช็คว่ายังใช้ได้กับ error จาก `fetch` เปล่าไหม (อาจต้อง throw
   เป็น shape ที่ `getApiErrorMessage` เข้าใจ หรือปรับ `onError` เฉพาะจุดนี้)
 
 ## xBloom-sytem
 
-**ไฟล์:** `xBloom-sytem/frontend/src/lib/api.ts` (บรรทัด ~281)
+**ไฟล์:** `xBloom-sytem/frontend/src/lib/api.ts` (บรรทัด ~281) + `ReportBugButton.tsx`
 
 ปัจจุบัน:
 ```ts
@@ -164,31 +219,46 @@ reportIssue: (b: { description: string; page?: string }) =>
 `req()` ใช้ `headers()` ซึ่งแนบ `Authorization` อัตโนมัติถ้า login อยู่ — **ห้ามใช้
 `req()` เดิมกับ endpoint นี้**
 
-เปลี่ยนเป็น (เขียนแยกจาก `req()` เดิม ไม่ผ่าน `headers()`):
+เปลี่ยนเป็น (เขียนแยกจาก `req()` เดิม ไม่ผ่าน `headers()`, และเป็น multipart แทน JSON):
 ```ts
-reportIssue: (b: { description: string; page?: string; reporterName?: string; reporterRole?: string }) =>
-  fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ system: "xBloom", ...b }),
-  }).then(async (res) => {
-    if (!res.ok) throw new ApiError(res.status, "ส่งแจ้งปัญหาไม่สำเร็จ");
-    return res.json() as Promise<{ id: number }>;
-  }),
+reportIssue: (b: {
+  description: string
+  severity: "critical" | "high" | "normal"
+  reporterId: string
+  reporterName: string
+  reporterRole?: string
+  page?: string
+  attachment?: File
+}) => {
+  const fd = new FormData()
+  fd.set("system", "xBloom")
+  fd.set("description", b.description)
+  fd.set("severity", b.severity)
+  fd.set("reporterId", b.reporterId)
+  fd.set("reporterName", b.reporterName)
+  if (b.reporterRole) fd.set("reporterRole", b.reporterRole)
+  if (b.page) fd.set("page", b.page)
+  if (b.attachment) fd.set("attachment", b.attachment)
+
+  return fetch(`${import.meta.env.VITE_ISSUE_SERVICE_URL}/api/issues`, { method: "POST", body: fd })
+    .then(async (res) => {
+      if (!res.ok) throw new ApiError(res.status, "ส่งแจ้งปัญหาไม่สำเร็จ");
+      return res.json() as Promise<{ id: string }>;
+    });
+},
 ```
-- เพิ่ม `VITE_ISSUE_SERVICE_URL=/issue-api` หรือ URL ตรงๆ ใน `.env.local` —
-  **ระวังบั๊กแบบที่เพิ่งเจอ**: ถ้าจะ proxy ผ่าน `vite.config.ts` เหมือน `/api` เดิม
-  ต้องเพิ่ม path ใหม่ในนั้นด้วย (`VITE_PROXY_TARGET` เดิมชี้ backend ของ xBloom
-  เอง คนละตัวกับ issue-service) — จะตรงไปที่ issue-service ตรงๆ แบบ Bhlogistics/
-  PRsystem/lms-casa เลยก็ได้ ไม่ต้องผ่าน proxy ก็ได้ เพราะ issue-service เปิด
-  CORS ให้แล้ว
-- `ReportBugButton.tsx` ต้องส่ง `reporterName`/`reporterRole` เพิ่มตอนเรียก
-  `api.reportIssue(...)`
+- เพิ่ม `VITE_ISSUE_SERVICE_URL=http://localhost:4003` ใน `.env.local` — ยิงตรง
+  ไป issue-service เลยได้ ไม่ต้องผ่าน `vite.config.ts` proxy เหมือน `/api` เดิม
+  (คนละ target กัน อย่าเผลอเอาไปรวมกับ `VITE_PROXY_TARGET` เดิมที่ชี้ backend
+  ของ xBloom เอง — จุดนี้เพิ่งเป็นบั๊กมาแล้วรอบนึง ระวังซ้ำ)
+- `ReportBugButton.tsx` ต้องส่ง `reporterId`/`reporterName`/`reporterRole` + severity picker + file input
+- README ของ xBloom เขียนไว้ว่า "หลังจาก login" แต่โค้ดจริงไม่เคยเช็ค — ต้องเพิ่ม guard จริง
 
 ## QSC-Sytem (PHP — ไม่มี Vite/build step)
 
 **ไฟล์:** `QSC-Sytem/qsc-web/partials/report_button.php` (ฟังก์ชัน JS
-`submitReportIssue()`)
+`submitReportIssue()`) — README เขียนว่าอยู่หลัง login แต่ต้องเช็ค `report_issue.php`
+ว่า reject anonymous จริงไหม (ตอนนี้ยอมรับแม้ไม่มี session)
 
 ปัจจุบัน:
 ```js
@@ -199,43 +269,56 @@ const res = await fetch('report_issue.php', {
 });
 ```
 
-เปลี่ยนเป็น — PHP รู้จัก user อยู่แล้วตอน render (session) เลย embed ชื่อ/role
-เข้าไปใน JS ตรงๆ ได้เลย ไม่ต้อง fetch เพิ่ม:
+เปลี่ยนเป็น — PHP รู้จัก user อยู่แล้วตอน render (session) เลย embed เข้าไปใน JS
+ตรงๆ ได้เลย ไม่ต้อง fetch เพิ่ม เปลี่ยนเป็น multipart ด้วย `FormData` (รองรับไฟล์แนบ):
 ```php
 <script>
 const ISSUE_SERVICE_URL = <?= json_encode(getenv('ISSUE_SERVICE_URL') ?: 'http://localhost:4003') ?>;
-const CURRENT_USER = <?= json_encode(is_logged_in() ? [
-  'name' => current_user()['full_name'] ?? current_user()['username'],
-  'role' => current_user()['role'],
-] : null) ?>;
+const CURRENT_USER = <?= json_encode([
+  'id' => $user['id'] ?? $user['username'],
+  'name' => $user['full_name'] ?? $user['username'],
+  'role' => $user['role'],
+]) ?>; // report_button.php ถูก include เฉพาะหลัง login อยู่แล้ว (require_login_page()) — ไม่ต้องเช็ค null
 </script>
 ```
 ```js
-const res = await fetch(`${ISSUE_SERVICE_URL}/api/issues`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    system: 'QSC-Sytem',
-    description,
-    page: location.pathname,
-    reporterName: CURRENT_USER?.name,
-    reporterRole: CURRENT_USER?.role,
-  }),
-});
+async function submitReportIssue() {
+  const description = el.value.trim();
+  if (description.length < 5) { toast('กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร', 'alert-triangle'); return; }
+
+  const fd = new FormData();
+  fd.set('system', 'QSC-Sytem');
+  fd.set('description', description);
+  fd.set('severity', selectedSeverity); // จาก severity picker ใหม่ในโมดัล
+  fd.set('reporterId', CURRENT_USER.id);
+  fd.set('reporterName', CURRENT_USER.name);
+  fd.set('reporterRole', CURRENT_USER.role);
+  fd.set('page', location.pathname);
+  if (fileInput.files[0]) fd.set('attachment', fileInput.files[0]);
+
+  const res = await fetch(`${ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd });
+  // ... จัดการ response เหมือนเดิม
+}
 ```
 - default fetch ไม่ส่ง cookie ข้าม origin เองอยู่แล้ว (ไม่ได้ใส่
   `credentials: 'include'`) เพราะงั้น QSC ไม่มีความเสี่ยงหลุด session cookie
   แบบ 4 ระบบข้างบน — ไม่ต้องระวังเรื่องนี้เป็นพิเศษ
 - เพิ่ม `ISSUE_SERVICE_URL` เป็น env var ใน `docker-compose.yml` ของ QSC
-- เช็คว่ามีฟังก์ชัน `is_logged_in()` อยู่ใน `auth.php` จริงไหม (ถ้าไม่มีใช้เงื่อนไข
-  ที่มีอยู่แล้วแทน เช่นเช็ค `current_user()` คืน null หรือไม่)
+- เพิ่ม severity picker (radio/badge) + `<input type="file">` ในโมดัลเดิม
+- ทุกหน้าที่ include `report_button.php` (index/dashboard/admin) ล้วนผ่าน
+  `require_login_page()` มาก่อนแล้วอยู่แล้ว — ดังนั้น QSC ข้อ 1 (บังคับ login)
+  ผ่านอัตโนมัติ ไม่ต้องเพิ่ม guard อะไรเพิ่ม
 
 ---
 
 ## หลัง Deploy ทีละระบบ — วิธีเช็คว่าเชื่อมถูก
 
 ```bash
-curl http://localhost:4003/api/issues -H "X-Dashboard-Key: <DASHBOARD_API_KEY>"
+# ยืนยัน issue ใหม่โผล่มาพร้อม system/severity/reporterId ถูกต้อง
+curl "http://localhost:4003/api/issues?limit=1" -H "X-Dashboard-Key: <DASHBOARD_API_KEY>"
+
+# ยืนยันฝั่ง user เห็นประวัติของตัวเอง (ใช้ reporterId ที่เพิ่งทดสอบส่ง)
+curl "http://localhost:4003/api/issues/mine?system=<ระบบ>&reporterId=<id>"
 ```
-ต้องเห็น issue ใหม่โผล่มาพร้อม `system` ตรงกับระบบที่เพิ่งทดสอบส่ง และ
-`reporterName`/`reporterRole` ไม่เป็น `null` ถ้าตอนทดสอบ login อยู่
+- `reporterName`/`reporterRole` ต้องไม่เป็น `null` (ถ้า null แปลว่า guard login ยังไม่ทำงาน หรือลืมส่ง field)
+- ลองแนบไฟล์ดูสักครั้ง แล้วเปิด `attachmentUrl` ที่ได้กลับมาตรงๆ ในเบราว์เซอร์ — ควรโดน `401` (เพราะไม่มี query `system`+`reporterId`) ถือว่าถูกต้อง ไม่ใช่บั๊ก

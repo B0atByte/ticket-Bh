@@ -1,14 +1,19 @@
+import { SEVERITY_META, type Severity } from '../constants.js'
 import { discordWebhookFor, type SystemName } from '../systems.js'
 
 export async function notifyDiscord(issue: {
   system: SystemName
   description: string
   page: string | null
-  reporterName: string | null
+  severity: Severity
+  reporterName: string
   reporterRole: string | null
+  hasAttachment: boolean
 }): Promise<void> {
   const webhookUrl = discordWebhookFor(issue.system)
   if (!webhookUrl) return // unconfigured for this system → skip silently, same as every existing system's own endpoint
+
+  const meta = SEVERITY_META[issue.severity]
 
   try {
     await fetch(webhookUrl, {
@@ -18,16 +23,13 @@ export async function notifyDiscord(issue: {
         username: issue.system,
         embeds: [
           {
-            title: `🐞 แจ้งปัญหาใหม่ - ${issue.system}`,
+            title: `${meta.emoji} แจ้งปัญหาใหม่ (${meta.label}) - ${issue.system}`,
             description: issue.description,
-            color: 0xef4444,
+            color: meta.color,
             fields: [
-              {
-                name: 'ผู้แจ้ง',
-                value: issue.reporterName ? `${issue.reporterName} (${issue.reporterRole ?? '-'})` : 'ไม่ระบุ (ยังไม่ได้ login)',
-                inline: true,
-              },
+              { name: 'ผู้แจ้ง', value: `${issue.reporterName}${issue.reporterRole ? ` (${issue.reporterRole})` : ''}`, inline: true },
               { name: 'หน้า', value: issue.page ?? '-', inline: true },
+              { name: 'ไฟล์แนบ', value: issue.hasAttachment ? 'มี' : 'ไม่มี', inline: true },
             ],
             timestamp: new Date().toISOString(),
           },
