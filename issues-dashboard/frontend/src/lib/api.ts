@@ -23,6 +23,7 @@ export interface Issue {
   reporterRole: string | null
   createdAt: string
   status: IssueStatusValue
+  statusUpdatedAt: string | null
 }
 
 export interface SourceStatus {
@@ -59,6 +60,10 @@ export function login(password: string) {
     method: 'POST',
     body: JSON.stringify({ password }),
   })
+}
+
+export function fetchAllIssues() {
+  return request<{ issues: Issue[]; sources: SourceStatus[] }>('/issues')
 }
 
 export function fetchActiveIssues() {

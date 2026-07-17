@@ -11,6 +11,10 @@ const HISTORY_STATUSES: IssueStatusValue[] = ['Resolved']
 
 export interface IssueWithStatus extends NormalizedIssue {
   status: IssueStatusValue
+  // When `status` was last set — null if the issue is still on the implicit
+  // default ('New' with no explicit row yet). For a Resolved issue this is
+  // the moment it became Resolved, i.e. resolution time = statusUpdatedAt - createdAt.
+  statusUpdatedAt: string | null
 }
 
 export interface StatusRecord {
@@ -61,15 +65,19 @@ export function setStatus(system: string, issueId: string, status: IssueStatusVa
 
 export function mergeStatuses(issues: NormalizedIssue[]): IssueWithStatus[] {
   const rows = getDb()
-    .prepare('SELECT system, issue_id AS issueId, status FROM issue_status')
-    .all() as { system: string; issueId: string; status: IssueStatusValue }[]
+    .prepare('SELECT system, issue_id AS issueId, status, updated_at AS updatedAt FROM issue_status')
+    .all() as { system: string; issueId: string; status: IssueStatusValue; updatedAt: string }[]
 
-  const statusMap = new Map(rows.map((r) => [`${r.system}::${r.issueId}`, r.status]))
+  const statusMap = new Map(rows.map((r) => [`${r.system}::${r.issueId}`, r]))
 
-  return issues.map((issue) => ({
-    ...issue,
-    status: statusMap.get(`${issue.system}::${issue.id}`) ?? 'New',
-  }))
+  return issues.map((issue) => {
+    const record = statusMap.get(`${issue.system}::${issue.id}`)
+    return {
+      ...issue,
+      status: record?.status ?? 'New',
+      statusUpdatedAt: record?.updatedAt ?? null,
+    }
+  })
 }
 
 export function filterByView(issues: IssueWithStatus[], view: 'active' | 'history'): IssueWithStatus[] {

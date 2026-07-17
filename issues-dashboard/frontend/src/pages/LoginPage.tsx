@@ -29,7 +29,7 @@ export default function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-4 flex items-start justify-between gap-2">
           <div>
-            <h1 className="mb-1 text-xl font-semibold text-slate-900">Issues Dashboard</h1>
+            <h1 className="mb-1 text-xl font-semibold text-slate-900">Issue Management</h1>
             <p className="text-sm text-slate-500">{t('app.subtitle')}</p>
           </div>
           <LangToggle />

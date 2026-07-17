@@ -21,10 +21,32 @@ const DICT: Record<string, Entry> = {
   'conn.partial': { th: 'เชื่อมต่อได้บางส่วน {ok}/{total} ระบบ', en: 'Partially connected {ok}/{total} systems' },
   'conn.failed': { th: 'ดึงข้อมูลไม่สำเร็จ', en: 'failed to fetch' },
 
+  'maintab.issues': { th: 'รายการแจ้งปัญหา', en: 'Issue List' },
+  'maintab.analytics': { th: 'แดชบอร์ดภาพรวม', en: 'Analytics Dashboard' },
+
   'tab.active': { th: 'ใหม่ / กำลังดำเนินการ', en: 'New / In Progress' },
   'tab.history': { th: 'ประวัติ', en: 'History' },
 
   'kpi.total': { th: 'ทั้งหมด', en: 'Total' },
+
+  'analytics.range.7d': { th: '7 วันล่าสุด', en: 'Last 7 days' },
+  'analytics.range.30d': { th: '30 วันล่าสุด', en: 'Last 30 days' },
+  'analytics.range.90d': { th: '90 วันล่าสุด', en: 'Last 90 days' },
+  'analytics.range.all': { th: 'ทั้งหมด', en: 'All time' },
+
+  'analytics.totalTickets': { th: 'จำนวนเรื่องแจ้งทั้งหมด', en: 'Total tickets received' },
+  'analytics.resolutionRate': { th: 'อัตราการแก้ปัญหาสำเร็จ', en: 'Resolution rate' },
+  'analytics.avgResolutionTime': { th: 'เวลาเฉลี่ยที่ใช้แก้ปัญหา', en: 'Average resolution time' },
+  'analytics.na': { th: 'ไม่มีข้อมูล', en: 'N/A' },
+
+  'analytics.issuesBySystem': { th: 'ปัญหาแยกตามระบบ', en: 'Issues by system' },
+  'analytics.trend': { th: 'แนวโน้มปัญหาที่แจ้งเข้ามา', en: 'Issue trend' },
+  'analytics.noData': { th: 'ยังไม่มีข้อมูลในช่วงนี้', en: 'No data in this period' },
+  'analytics.loading': { th: 'กำลังโหลดข้อมูลวิเคราะห์...', en: 'Loading analytics...' },
+
+  'duration.minutes': { th: '{n} นาที', en: '{n} min' },
+  'duration.hours': { th: '{n} ชม.', en: '{n} hr' },
+  'duration.daysHours': { th: '{d} วัน {h} ชม.', en: '{d}d {h}h' },
 
   'filter.searchPlaceholder': { th: 'ค้นหาปัญหา...', en: 'Search issues...' },
   'filter.allSystems': { th: 'ทุกระบบ', en: 'All systems' },
