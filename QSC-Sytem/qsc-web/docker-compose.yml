@@ -21,6 +21,13 @@ services:
       DISCORD_WEBHOOK: ${DISCORD_WEBHOOK:-}
       # Shared secret ที่ต้องแนบใน header X-Dashboard-Key เพื่อเรียก get_issues.php (ใช้โดย issues-dashboard)
       DASHBOARD_API_KEY: ${DASHBOARD_API_KEY:-}
+      # ปลายทางกลางที่ปุ่ม "แจ้งปัญหา" ยิง POST ไปตรงๆ จาก browser (client-side, ไม่ใช่ server-to-server — ค่า default ใช้ localhost ได้เลยตอน dev)
+      ISSUE_SERVICE_URL: ${ISSUE_SERVICE_URL:-http://localhost:4003}
+      # ลิงก์ quick access ไปยังอีก 4 ระบบ (โชว์ในเมนูผู้ใช้)
+      URL_BHLOGISTICS: ${URL_BHLOGISTICS:-http://localhost:5173}
+      URL_PRSYSTEM: ${URL_PRSYSTEM:-http://localhost:5174}
+      URL_LMSCASA: ${URL_LMSCASA:-http://localhost:5175}
+      URL_XBLOOM: ${URL_XBLOOM:-http://localhost:5176}
     restart: unless-stopped
 
 volumes:

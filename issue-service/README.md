@@ -122,15 +122,17 @@ npm run dev   # http://localhost:4003
 
 ## สถานะ / ขั้นตอนถัดไป
 
-ทำเสร็จแล้ว: **ตัว service กลาง** (รวม severity + สถานะ/timeline + ไฟล์แนบ +
-endpoint ฝั่งแอดมิน) + **checklist เชื่อมต่อ frontend รายระบบ**
-(ดู [FRONTEND_CHECKLIST.md](./FRONTEND_CHECKLIST.md)) — แต่ยังไม่ได้ลงมือแก้
-frontend จริงสักระบบ 5 ระบบเดิมยังยิงไปที่ endpoint ของตัวเองเหมือนเดิม (ไม่บังคับ
-login), issues-dashboard ยังดึงจาก 5 ระบบแยกกันเหมือนเดิม (ไม่มี severity/status
-ใหม่นี้) ขั้นตอนถัดไป (ยังไม่ทำ):
+ทำเสร็จแล้ว: **ตัว service กลาง** (severity + สถานะ/timeline + ไฟล์แนบ + endpoint
+ฝั่งแอดมิน) + **ทั้ง 5 ระบบต่อเข้ากับ service นี้จริงแล้ว** (ดู
+[FRONTEND_CHECKLIST.md](./FRONTEND_CHECKLIST.md) สำหรับรายละเอียดต่อระบบ) —
+ปุ่ม "แจ้งปัญหา" ทุกระบบตอนนี้อยู่หลัง login, มี severity picker + ช่องแนบไฟล์,
+และยิง POST ไปที่ service นี้โดยตรงแล้ว ทดสอบ end-to-end ผ่านจริงทั้ง 5 ระบบ
+(login → เลือกระดับความเร่งด่วน → ส่ง → ยืนยันข้อมูลกลับมาถูกต้องที่ `GET
+/api/issues` รวมถึงไฟล์แนบ)
 
-1. ทำตาม [FRONTEND_CHECKLIST.md](./FRONTEND_CHECKLIST.md) ทีละระบบ — ทั้งบังคับ login และเปลี่ยนไปยิง multipart ตาม field ใหม่
-2. ทำหน้า/ปุ่ม "ประวัติการแจ้งปัญหา" ฝั่ง user (เรียก `GET /mine`) — ยังไม่ได้ออกแบบ UI ส่วนนี้ แค่ backend พร้อมแล้ว
-3. ทำหน้าแอดมินเปลี่ยนสถานะ (เรียก `PATCH .../status`) — อาจต่อยอดจาก `issues-dashboard` ที่มี UI อยู่แล้ว แทนที่จะสร้างหน้าใหม่
-4. สลับ `issues-dashboard/backend/src/lib/sources.ts` ให้ดึงจาก service นี้ที่เดียวแทน 5 endpoint เดิม
-5. ทยอยปิด endpoint/ตาราง `issues` เดิมของแต่ละระบบหลังย้ายเสร็จ (ไม่ต้องรีบ ปล่อยคู่ขนานได้ระหว่างเปลี่ยนผ่าน)
+ขั้นตอนถัดไป (ยังไม่ทำ):
+
+1. ทำหน้า/ปุ่ม "ประวัติการแจ้งปัญหา" ฝั่ง user (เรียก `GET /mine`) — ยังไม่ได้ออกแบบ UI ส่วนนี้ แค่ backend พร้อมแล้ว
+2. ทำหน้าแอดมินเปลี่ยนสถานะ (เรียก `PATCH .../status`) — อาจต่อยอดจาก `issues-dashboard` ที่มี UI อยู่แล้ว แทนที่จะสร้างหน้าใหม่
+3. สลับ `issues-dashboard/backend/src/lib/sources.ts` ให้ดึงจาก service นี้ที่เดียวแทน 5 endpoint เดิม (ตอนนี้ dashboard ยังดึงจาก 5 ระบบเดิมที่ไม่มี severity/status ใหม่นี้)
+4. ทยอยปิด endpoint/ตาราง `issues` เดิมของแต่ละระบบหลังย้ายเสร็จ (ไม่ต้องรีบ ปล่อยคู่ขนานได้ระหว่างเปลี่ยนผ่าน — ตอนนี้ยังไม่ปิด)

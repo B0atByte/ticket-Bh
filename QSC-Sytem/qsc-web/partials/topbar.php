@@ -67,7 +67,30 @@ function navpill(bool $on): string
               <i data-lucide="settings" class="w-4 h-4" aria-hidden="true"></i> จัดการระบบ
             </a>
             <?php endif; ?>
-            <a href="logout.php" class="mt-0.5 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50">
+
+            <div class="mt-1 px-3 pt-2 pb-1 border-t border-slate-50 text-[11px] text-slate-400">ไปยังระบบอื่น</div>
+            <a href="<?= htmlspecialchars(URL_BHLOGISTICS) ?>" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"></i>
+              <span class="truncate">Bhlogisticssystem (ขนส่ง)</span>
+            </a>
+            <a href="<?= htmlspecialchars(URL_PRSYSTEM) ?>" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"></i>
+              <span class="truncate">PRsystem (ขอซื้อ)</span>
+            </a>
+            <a href="<?= htmlspecialchars(URL_LMSCASA) ?>" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"></i>
+              <span class="truncate">lms-casa (เทรน/สอบ)</span>
+            </a>
+            <a href="<?= htmlspecialchars(URL_XBLOOM) ?>" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"></i>
+              <span class="truncate">xBloom-sytem (ประกัน)</span>
+            </a>
+
+            <a href="logout.php" class="mt-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 border-t border-slate-50 pt-2.5">
               <i data-lucide="log-out" class="w-4 h-4" aria-hidden="true"></i> ออกจากระบบ
             </a>
           </div>

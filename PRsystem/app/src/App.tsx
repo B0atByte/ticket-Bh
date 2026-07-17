@@ -7,13 +7,15 @@ import {
   Shield, KeyRound, UserPlus, BarChart2,
   FileCheck, Send, Banknote, History, RefreshCw, Menu, Package,
   Download, Filter, CalendarDays, MessageSquare, ChevronLeft,
-  ExternalLink, MapPin, Image, Bug, Loader2
+  ExternalLink, MapPin, Image, Bug, Loader2, Grid2x2
 } from 'lucide-react';
 import {
   ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, CATEGORIES,
   type User, type PurchaseRequest, type PurchaseItem, type AuditLog, type Role
 } from './data';
 import { api } from './lib/api';
+import { submitIssueReport, type Severity } from './lib/issueService';
+import { otherSystems } from './lib/quickAccess';
 import './index.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -738,6 +740,12 @@ function LoginPage({ onLogin, siteSettings }: { onLogin: (u: User) => void; site
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════════
 interface MenuItem { id: Page; label: string; icon: React.ElementType; roles: Role[]; }
+const SEVERITY_OPTIONS: { value: Severity; emoji: string; label: string; hint: string }[] = [
+  { value: 'critical', emoji: '🔴', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
+  { value: 'high', emoji: '🟡', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
+  { value: 'normal', emoji: '🟢', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
+];
+
 const MENU: MenuItem[] = [
   { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard, roles: ['owner', 'itsupport'] },
   { id: 'all-requests', label: 'คำขอทั้งหมด', icon: FileText, roles: ['owner', 'itsupport'] },
@@ -832,6 +840,7 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
 }) {
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showQuickAccess, setShowQuickAccess] = useState(false);
 
   const pageTitles: Partial<Record<Page, string>> = {
     dashboard: 'แดชบอร์ด', 'my-requests': 'คำขอของฉัน', 'create-request': 'สร้างใบขอซื้อ',
@@ -867,7 +876,7 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
 
       {/* Notification */}
       <div className="relative">
-        <button onClick={() => { setShowNotif(!showNotif); setShowUserMenu(false); }}
+        <button onClick={() => { setShowNotif(!showNotif); setShowUserMenu(false); setShowQuickAccess(false); }}
           className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
           <Bell size={17} />
           {badgeCount > 0 && (
@@ -892,9 +901,29 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
         )}
       </div>
 
+      {/* Quick access — other systems */}
+      <div className="relative">
+        <button onClick={() => { setShowQuickAccess(!showQuickAccess); setShowNotif(false); setShowUserMenu(false); }}
+          className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
+          <Grid2x2 size={17} />
+        </button>
+        {showQuickAccess && (
+          <div className="absolute right-0 top-11 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 z-50 p-1.5 overflow-hidden">
+            <p className="px-2.5 py-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500">ไปยังระบบอื่น</p>
+            {otherSystems('prsystem').map(s => (
+              <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <span className="truncate">{s.label}</span>
+                <ExternalLink size={13} className="shrink-0 text-slate-400" />
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* User menu */}
       <div className="relative">
-        <button onClick={() => { setShowUserMenu(!showUserMenu); setShowNotif(false); }}
+        <button onClick={() => { setShowUserMenu(!showUserMenu); setShowNotif(false); setShowQuickAccess(false); }}
           className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <div className="w-8 h-8 rounded-full bg-[#206bc4]/10 dark:bg-blue-900/40 flex items-center justify-center text-[#206bc4] dark:text-blue-300 font-bold text-sm">{user.name.charAt(0)}</div>
           <span className="text-sm text-slate-700 dark:text-slate-200 font-medium hidden sm:block max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
@@ -4005,6 +4034,8 @@ export default function App() {
   const [editUserTarget, setEditUserTarget] = useState<User | null | undefined>(undefined);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportDesc, setReportDesc] = useState('');
+  const [reportSeverity, setReportSeverity] = useState<Severity>('normal');
+  const [reportAttachment, setReportAttachment] = useState<File | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // Inline modal form fields
@@ -4194,10 +4225,20 @@ export default function App() {
     }
     setReportSubmitting(true);
     try {
-      await api.issues.create({ description: reportDesc.trim(), page });
+      await submitIssueReport({
+        description: reportDesc.trim(),
+        severity: reportSeverity,
+        reporterId: currentUser.id,
+        reporterName: currentUser.name,
+        reporterRole: currentUser.role,
+        page,
+        attachment: reportAttachment,
+      });
       toast('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
       setReportOpen(false);
       setReportDesc('');
+      setReportSeverity('normal');
+      setReportAttachment(null);
     } catch (err: any) {
       toast(err.message || 'ส่งแจ้งปัญหาไม่สำเร็จ กรุณาลองใหม่', 'error');
     } finally {
@@ -4279,10 +4320,10 @@ export default function App() {
         แจ้งปัญหา
       </button>
 
-      <Modal open={reportOpen} title="แจ้งปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportDesc(''); } }}
+      <Modal open={reportOpen} title="แจ้งปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); } }}
         footer={
           <div className="flex gap-2">
-            <button onClick={() => { setReportOpen(false); setReportDesc(''); }} disabled={reportSubmitting}
+            <button onClick={() => { setReportOpen(false); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
               className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
               ยกเลิก
             </button>
@@ -4293,8 +4334,28 @@ export default function App() {
             </button>
           </div>
         }>
+        <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">ระดับความเร่งด่วน</p>
+        <div className="mb-3 grid grid-cols-3 gap-1.5">
+          {SEVERITY_OPTIONS.map(opt => (
+            <button key={opt.value} type="button" onClick={() => setReportSeverity(opt.value)} disabled={reportSubmitting} title={opt.hint}
+              className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                reportSeverity === opt.value
+                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}>
+              <div>{opt.emoji}</div>
+              <div>{opt.label}</div>
+            </button>
+          ))}
+        </div>
         <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
           placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
+        <label className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+          <Upload size={14} className="shrink-0" />
+          <span className="truncate">{reportAttachment ? reportAttachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" disabled={reportSubmitting}
+            onChange={e => setReportAttachment(e.target.files?.[0] ?? null)} className="hidden" />
+        </label>
       </Modal>
 
       {/* Request Detail Modal */}

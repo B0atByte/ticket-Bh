@@ -24,6 +24,7 @@ import { applyBranding, getBranding } from '../features/admin/admin.api';
 import { logout } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
 import { NotificationsMenu } from '../features/notifications/NotificationsMenu';
+import { QuickAccessMenu } from '../components/QuickAccessMenu';
 import { cn } from '../lib/utils';
 
 const navGroups = [
@@ -216,6 +217,7 @@ export function AppShell() {
           <div className="hidden md:block" />
 
           <div className="flex items-center gap-1">
+            <QuickAccessMenu />
             <NotificationsMenu />
             <button
               type="button"

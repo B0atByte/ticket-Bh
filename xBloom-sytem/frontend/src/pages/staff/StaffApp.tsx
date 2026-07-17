@@ -6,6 +6,7 @@ import { swalError, swalToast } from "../../lib/swal";
 import { Button, Logo, TextField } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import LangToggle from "../../components/LangToggle";
+import QuickAccessMenu from "../../components/QuickAccessMenu";
 import Footer from "../../components/Footer";
 import CrmView from "./CrmView";
 import Today from "./tabs/Today";
@@ -125,6 +126,7 @@ export default function StaffApp() {
               </div>
             </form>
             <div className="ml-auto flex items-center gap-3">
+              <QuickAccessMenu />
               <LangToggle />
               <div className="hidden items-center gap-2 lg:flex">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl2 border border-line bg-brown-tint text-xs font-bold text-brand">{initials}</span>
