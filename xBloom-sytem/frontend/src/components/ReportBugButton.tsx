@@ -16,7 +16,14 @@ import { useI18n } from "../lib/i18n";
 import { swalToast } from "../lib/swal";
 
 const SEVERITIES: Severity[] = ["critical", "high", "normal"];
-const SEVERITY_EMOJI: Record<Severity, string> = { critical: "🔴", high: "🟡", normal: "🟢" };
+
+// Solid color per severity — the button/dot itself is the signal
+// (red/amber/green), no emoji needed.
+const SEVERITY_STYLES: Record<Severity, { button: string; dot: string }> = {
+  critical: { button: "bg-red text-white", dot: "bg-red" },
+  high: { button: "bg-wait text-white", dot: "bg-wait" },
+  normal: { button: "bg-green text-white", dot: "bg-green" },
+};
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → pending_user → resolved).
@@ -54,7 +61,7 @@ function IssueHistoryCard({ issue, lang, t }: { issue: MyIssue; lang: string; t:
     <div className="rounded-xl2 border border-line p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm text-ink">{issue.description}</p>
-        <span className="shrink-0 text-sm">{SEVERITY_EMOJI[issue.severity]}</span>
+        <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${SEVERITY_STYLES[issue.severity].dot}`} />
       </div>
       <p className="mb-3 text-[11px] text-muted">
         {new Date(issue.createdAt).toLocaleString(lang === "th" ? "th-TH" : "en-US", {
@@ -177,12 +184,11 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
                   onClick={() => setSeverity(s)}
                   disabled={submitting}
                   title={t(`bugReport.severity.${s}Hint`)}
-                  className={`rounded-xl2 border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
-                    severity === s ? "border-red bg-red-tint text-red" : "border-line text-muted hover:bg-canvas"
+                  className={`rounded-xl2 px-2 py-2 text-xs font-semibold transition-all disabled:opacity-40 ${SEVERITY_STYLES[s].button} ${
+                    severity === s ? "ring-2 ring-offset-2 ring-ink" : "opacity-50 hover:opacity-80"
                   }`}
                 >
-                  <div>{SEVERITY_EMOJI[s]}</div>
-                  <div>{t(`bugReport.severity.${s}`)}</div>
+                  {t(`bugReport.severity.${s}`)}
                 </button>
               ))}
             </div>

@@ -39,7 +39,6 @@ export type IssueStatus = "submitted" | "acknowledged" | "pending_user" | "resol
 export interface IssueHistoryEntry {
   status: IssueStatus;
   label: string;
-  emoji: string;
   note: string | null;
   createdAt: string;
 }
@@ -50,7 +49,6 @@ export interface MyIssue {
   severity: Severity;
   status: IssueStatus;
   statusLabel: string;
-  statusEmoji: string;
   createdAt: string;
   history: IssueHistoryEntry[];
 }

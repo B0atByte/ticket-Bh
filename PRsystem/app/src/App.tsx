@@ -7,14 +7,14 @@ import {
   Shield, KeyRound, UserPlus, BarChart2,
   FileCheck, Send, Banknote, History, RefreshCw, Menu, Package,
   Download, Filter, CalendarDays, MessageSquare, ChevronLeft,
-  ExternalLink, MapPin, Image, Bug, Loader2
+  ExternalLink, MapPin, Image, Bug, Loader2, ArrowLeft, Paperclip
 } from 'lucide-react';
 import {
   ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, CATEGORIES,
   type User, type PurchaseRequest, type PurchaseItem, type AuditLog, type Role
 } from './data';
 import { api } from './lib/api';
-import { fetchMyIssues, submitIssueReport, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
+import { fetchMyIssues, getAttachmentDownloadUrl, submitIssueReport, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
 import './index.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -762,11 +762,19 @@ function LoginPage({ onLogin, siteSettings }: { onLogin: (u: User) => void; site
 // SIDEBAR
 // ═══════════════════════════════════════════════════════════════════
 interface MenuItem { id: Page; label: string; icon: React.ElementType; roles: Role[]; }
-const SEVERITY_OPTIONS: { value: Severity; emoji: string; label: string; hint: string }[] = [
-  { value: 'critical', emoji: '🔴', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
-  { value: 'high', emoji: '🟡', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
-  { value: 'normal', emoji: '🟢', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
+const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
+  { value: 'critical', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
+  { value: 'high', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
+  { value: 'normal', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
 ];
+
+// Solid color per severity — replaces the old emoji picker with the color
+// itself as the signal (red/amber/green), so the button IS the severity.
+const SEVERITY_STYLES: Record<Severity, { button: string; dot: string }> = {
+  critical: { button: 'bg-red-600 hover:bg-red-700 text-white', dot: 'bg-red-500' },
+  high: { button: 'bg-amber-500 hover:bg-amber-600 text-white', dot: 'bg-amber-500' },
+  normal: { button: 'bg-green-600 hover:bg-green-700 text-white', dot: 'bg-green-500' },
+};
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → pending_user → resolved) — labels match what
@@ -806,18 +814,78 @@ function IssueProgress({ status }: { status: IssueStatus }) {
   );
 }
 
-function IssueHistoryCard({ issue }: { issue: MyIssue }) {
+function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
-        {sev && <span className="shrink-0 text-sm" title={sev.label}>{sev.emoji}</span>}
+        {sev && <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${SEVERITY_STYLES[issue.severity].dot}`} title={sev.label} />}
       </div>
       <p className="mb-3 text-[11px] text-slate-400 dark:text-slate-500">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
       </p>
       <IssueProgress status={issue.status} />
+      <button
+        type="button"
+        onClick={() => onViewMore(issue)}
+        className="mt-3 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+      >
+        ดูเพิ่ม
+      </button>
+    </div>
+  );
+}
+
+function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
+  const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
+  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
+
+  return (
+    <div className="space-y-3.5">
+      <button type="button" onClick={onBack}
+        className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        <ArrowLeft size={14} />
+        ย้อนกลับ
+      </button>
+
+      {sev && (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${SEVERITY_STYLES[issue.severity].button}`}>
+          {sev.label}
+        </span>
+      )}
+
+      <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
+
+      <p className="text-[11px] text-slate-400 dark:text-slate-500">
+        แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+      </p>
+
+      {attachmentUrl && (
+        <a href={attachmentUrl} target="_blank" rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400">
+          <Paperclip size={12} />
+          ดูไฟล์แนบ
+        </a>
+      )}
+
+      <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+        <p className="mb-2.5 text-xs font-medium text-slate-500 dark:text-slate-400">ความคืบหน้า</p>
+        <div className="space-y-3">
+          {issue.history.map((h, i) => (
+            <div key={i} className="flex gap-2.5">
+              <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${h.status === 'resolved' ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{h.label}</p>
+                {h.note && <p className="text-xs text-slate-500 dark:text-slate-400">{h.note}</p>}
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {new Date(h.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -4101,7 +4169,8 @@ export default function App() {
   const [reportSeverity, setReportSeverity] = useState<Severity>('normal');
   const [reportAttachment, setReportAttachment] = useState<File | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [reportView, setReportView] = useState<'new' | 'history'>('new');
+  const [reportView, setReportView] = useState<'new' | 'history' | 'detail'>('new');
+  const [reportSelectedIssue, setReportSelectedIssue] = useState<MyIssue | null>(null);
   const [reportHistory, setReportHistory] = useState<MyIssue[]>([]);
   const [reportHistoryLoading, setReportHistoryLoading] = useState(false);
   const [reportHistoryError, setReportHistoryError] = useState<string | null>(null);
@@ -4406,26 +4475,26 @@ export default function App() {
             </button>
           </div>
         ) : undefined}>
-        <div className="mb-4 grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-          <button type="button" onClick={() => setReportView('new')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
-              reportView === 'new'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}>
-            <Bug size={13} />
-            แจ้งปัญหาใหม่
-          </button>
-          <button type="button" onClick={() => setReportView('history')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
-              reportView === 'history'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}>
-            <History size={13} />
-            ประวัติของฉัน
-          </button>
-        </div>
+        {reportView !== 'detail' && (
+          <div className="mb-4 grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+            <button type="button" onClick={() => setReportView('new')}
+              className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                reportView === 'new'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}>
+              แจ้งปัญหาใหม่
+            </button>
+            <button type="button" onClick={() => setReportView('history')}
+              className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                reportView === 'history'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}>
+              ประวัติของฉัน
+            </button>
+          </div>
+        )}
 
         {reportView === 'new' ? (
           <>
@@ -4433,13 +4502,10 @@ export default function App() {
             <div className="mb-3 grid grid-cols-3 gap-1.5">
               {SEVERITY_OPTIONS.map(opt => (
                 <button key={opt.value} type="button" onClick={() => setReportSeverity(opt.value)} disabled={reportSubmitting} title={opt.hint}
-                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
-                    reportSeverity === opt.value
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all disabled:opacity-50 ${SEVERITY_STYLES[opt.value].button} ${
+                    reportSeverity === opt.value ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-offset-slate-900' : 'opacity-50 hover:opacity-80'
                   }`}>
-                  <div>{opt.emoji}</div>
-                  <div>{opt.label}</div>
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -4452,7 +4518,7 @@ export default function App() {
                 onChange={e => setReportAttachment(e.target.files?.[0] ?? null)} className="hidden" />
             </label>
           </>
-        ) : (
+        ) : reportView === 'history' ? (
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
             {reportHistoryLoading ? (
               <div className="flex items-center justify-center py-10 text-slate-400 dark:text-slate-600">
@@ -4463,9 +4529,15 @@ export default function App() {
             ) : reportHistory.length === 0 ? (
               <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">ยังไม่มีประวัติการแจ้งปัญหา</p>
             ) : (
-              reportHistory.map(issue => <IssueHistoryCard key={issue.id} issue={issue} />)
+              reportHistory.map(issue => (
+                <IssueHistoryCard key={issue.id} issue={issue} onViewMore={(i) => { setReportSelectedIssue(i); setReportView('detail'); }} />
+              ))
             )}
           </div>
+        ) : (
+          reportSelectedIssue && (
+            <IssueDetail issue={reportSelectedIssue} reporterId={currentUser.id} onBack={() => setReportView('history')} />
+          )
         )}
       </Modal>
 

@@ -34,7 +34,6 @@ function serializeIssue(issue: Issue) {
     severity: issue.severity,
     status: issue.status,
     statusLabel: STATUS_META[issue.status].label,
-    statusEmoji: STATUS_META[issue.status].emoji,
     reporterId: issue.reporterId,
     reporterName: issue.reporterName,
     reporterRole: issue.reporterRole,
@@ -49,7 +48,6 @@ function serializeHistory(entries: StatusHistoryEntry[]) {
   return entries.map((h) => ({
     status: h.status,
     label: STATUS_META[h.status].label,
-    emoji: STATUS_META[h.status].emoji,
     note: h.note,
     createdAt: toUtcIso(h.createdAt),
   }))

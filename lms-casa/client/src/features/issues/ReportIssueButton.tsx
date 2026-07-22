@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Bug, History, Loader2, Paperclip } from 'lucide-react';
+import { ArrowLeft, Loader2, Paperclip } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
@@ -15,14 +15,22 @@ import { useAuthStore } from '../auth/auth.store';
 import { getApiErrorMessage } from '../../lib/api-error';
 import { toastSuccess } from '../../lib/confirm';
 import { alertWarning } from '../../lib/confirm';
-import type { IssueStatus, MyIssue, Severity } from '../../lib/issueService';
+import { getAttachmentDownloadUrl, type IssueStatus, type MyIssue, type Severity } from '../../lib/issueService';
 import { createIssue, getMyIssues } from './issues.api';
 
-const SEVERITY_OPTIONS: { value: Severity; emoji: string; label: string; hint: string }[] = [
-  { value: 'critical', emoji: '🔴', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
-  { value: 'high', emoji: '🟡', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
-  { value: 'normal', emoji: '🟢', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
+const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
+  { value: 'critical', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
+  { value: 'high', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
+  { value: 'normal', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
 ];
+
+// Solid color per severity — replaces the old emoji picker with the color
+// itself as the signal (red/amber/green), so the button IS the severity.
+const SEVERITY_STYLES: Record<Severity, { button: string; dot: string }> = {
+  critical: { button: 'bg-red-600 hover:bg-red-700 text-white', dot: 'bg-red-500' },
+  high: { button: 'bg-amber-500 hover:bg-amber-600 text-white', dot: 'bg-amber-500' },
+  normal: { button: 'bg-green-600 hover:bg-green-700 text-white', dot: 'bg-green-500' },
+};
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → pending_user → resolved) — labels match what
@@ -66,23 +74,86 @@ function IssueProgress({ status }: { status: IssueStatus }) {
   );
 }
 
-function IssueHistoryCard({ issue }: { issue: MyIssue }) {
+function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
 
   return (
     <div className="rounded-xl border border-border p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm text-foreground">{issue.description}</p>
-        {sev && (
-          <span className="shrink-0 text-sm" title={sev.label}>
-            {sev.emoji}
-          </span>
-        )}
+        {sev && <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${SEVERITY_STYLES[issue.severity].dot}`} title={sev.label} />}
       </div>
       <p className="mb-3 text-[11px] text-muted-foreground">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
       </p>
       <IssueProgress status={issue.status} />
+      <button
+        type="button"
+        onClick={() => onViewMore(issue)}
+        className="mt-3 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+      >
+        ดูเพิ่ม
+      </button>
+    </div>
+  );
+}
+
+function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
+  const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
+  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
+
+  return (
+    <div className="space-y-3.5">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft size={14} />
+        ย้อนกลับ
+      </button>
+
+      {sev && (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${SEVERITY_STYLES[issue.severity].button}`}>
+          {sev.label}
+        </span>
+      )}
+
+      <p className="whitespace-pre-wrap text-sm text-foreground">{issue.description}</p>
+
+      <p className="text-[11px] text-muted-foreground">
+        แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+      </p>
+
+      {attachmentUrl && (
+        <a
+          href={attachmentUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+        >
+          <Paperclip size={12} />
+          ดูไฟล์แนบ
+        </a>
+      )}
+
+      <div className="border-t border-border pt-3">
+        <p className="mb-2.5 text-xs font-medium text-muted-foreground">ความคืบหน้า</p>
+        <div className="space-y-3">
+          {issue.history.map((h, i) => (
+            <div key={i} className="flex gap-2.5">
+              <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${h.status === 'resolved' ? 'bg-green-500' : 'bg-destructive'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">{h.label}</p>
+                {h.note && <p className="text-xs text-muted-foreground">{h.note}</p>}
+                <p className="text-[11px] text-muted-foreground">
+                  {new Date(h.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -95,7 +166,8 @@ interface Props {
 export function ReportIssueDialog({ open, onOpenChange }: Props) {
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
-  const [view, setView] = useState<'new' | 'history'>('new');
+  const [view, setView] = useState<'new' | 'history' | 'detail'>('new');
+  const [selectedIssue, setSelectedIssue] = useState<MyIssue | null>(null);
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState<Severity>('normal');
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -161,34 +233,31 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={(next) => !mutation.isPending && onOpenChange(next)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Bug size={18} className="text-destructive" />
-            รายงานปัญหา
-          </DialogTitle>
+          <DialogTitle>รายงานปัญหา</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-accent p-1">
-          <button
-            type="button"
-            onClick={() => setView('new')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
-              view === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Bug size={13} />
-            แจ้งปัญหาใหม่
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('history')}
-            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
-              view === 'history' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <History size={13} />
-            ประวัติของฉัน
-          </button>
-        </div>
+        {view !== 'detail' && (
+          <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-accent p-1">
+            <button
+              type="button"
+              onClick={() => setView('new')}
+              className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                view === 'new' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              แจ้งปัญหาใหม่
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('history')}
+              className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                view === 'history' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              ประวัติของฉัน
+            </button>
+          </div>
+        )}
 
         {view === 'new' ? (
           <>
@@ -201,14 +270,11 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
                   onClick={() => setSeverity(opt.value)}
                   disabled={mutation.isPending}
                   title={opt.hint}
-                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
-                    severity === opt.value
-                      ? 'border-destructive bg-destructive/10 text-destructive'
-                      : 'border-border text-muted-foreground hover:bg-accent'
+                  className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all disabled:opacity-50 ${SEVERITY_STYLES[opt.value].button} ${
+                    severity === opt.value ? 'ring-2 ring-offset-2 ring-foreground' : 'opacity-50 hover:opacity-80'
                   }`}
                 >
-                  <div>{opt.emoji}</div>
-                  <div>{opt.label}</div>
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -251,7 +317,7 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
               </Button>
             </DialogFooter>
           </>
-        ) : (
+        ) : view === 'history' ? (
           <div className="max-h-[60vh] space-y-2.5 overflow-y-auto">
             {historyLoading ? (
               <div className="flex items-center justify-center py-10 text-muted-foreground">
@@ -262,9 +328,20 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
             ) : history.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">ยังไม่มีประวัติการแจ้งปัญหา</p>
             ) : (
-              history.map((issue) => <IssueHistoryCard key={issue.id} issue={issue} />)
+              history.map((issue) => (
+                <IssueHistoryCard
+                  key={issue.id}
+                  issue={issue}
+                  onViewMore={(i) => {
+                    setSelectedIssue(i);
+                    setView('detail');
+                  }}
+                />
+              ))
             )}
           </div>
+        ) : (
+          selectedIssue && <IssueDetail issue={selectedIssue} reporterId={user.id} onBack={() => setView('history')} />
         )}
       </DialogContent>
     </Dialog>

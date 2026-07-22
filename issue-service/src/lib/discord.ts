@@ -23,7 +23,7 @@ export async function notifyDiscord(issue: {
         username: issue.system,
         embeds: [
           {
-            title: `${meta.emoji} แจ้งปัญหาใหม่ (${meta.label}) - ${issue.system}`,
+            title: `แจ้งปัญหาใหม่ (${meta.label}) - ${issue.system}`,
             description: issue.description,
             color: meta.color,
             fields: [

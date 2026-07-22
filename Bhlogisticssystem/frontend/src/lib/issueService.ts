@@ -39,7 +39,6 @@ export type IssueStatus = 'submitted' | 'acknowledged' | 'pending_user' | 'resol
 export interface IssueHistoryEntry {
   status: IssueStatus
   label: string
-  emoji: string
   note: string | null
   createdAt: string
 }
@@ -50,8 +49,10 @@ export interface MyIssue {
   severity: Severity
   status: IssueStatus
   statusLabel: string
-  statusEmoji: string
   createdAt: string
+  page: string | null
+  hasAttachment: boolean
+  attachmentUrl: string | null
   history: IssueHistoryEntry[]
 }
 
@@ -61,4 +62,13 @@ export async function fetchMyIssues(reporterId: string): Promise<MyIssue[]> {
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error || 'โหลดประวัติการแจ้งปัญหาไม่สำเร็จ')
   return body.issues
+}
+
+// issue-service gates the raw attachment behind ?system=&reporterId= (same
+// soft-trust tier as GET /mine) — build the authenticated download link here
+// so callers don't have to know the query-param contract.
+export function getAttachmentDownloadUrl(issue: MyIssue, reporterId: string): string | null {
+  if (!issue.attachmentUrl) return null
+  const params = new URLSearchParams({ system: 'Bhlogisticssystem', reporterId })
+  return `${BASE_URL}${issue.attachmentUrl}?${params.toString()}`
 }
