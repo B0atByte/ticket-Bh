@@ -17,14 +17,6 @@ const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
   { value: 'normal', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
 ]
 
-// Solid color per severity — replaces the old emoji picker with the color
-// itself as the signal (red/amber/green), so the button IS the severity.
-const SEVERITY_STYLES: Record<Severity, { button: string; dot: string }> = {
-  critical: { button: 'bg-red-600 hover:bg-red-700 text-white', dot: 'bg-red-500' },
-  high: { button: 'bg-amber-500 hover:bg-amber-600 text-white', dot: 'bg-amber-500' },
-  normal: { button: 'bg-green-600 hover:bg-green-700 text-white', dot: 'bg-green-500' },
-}
-
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → pending_user → resolved) — labels match what
 // admins see elsewhere (dashboard) so the reporter isn't shown different
@@ -74,7 +66,11 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
-        {sev && <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${SEVERITY_STYLES[issue.severity].dot}`} title={sev.label} />}
+        {sev && (
+          <span className="shrink-0 rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+            {sev.label}
+          </span>
+        )}
       </div>
       <p className="mb-3 text-[11px] text-slate-400 dark:text-slate-500">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -107,7 +103,7 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
       </button>
 
       {sev && (
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${SEVERITY_STYLES[issue.severity].button}`}>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
           {sev.label}
         </span>
       )}
@@ -285,8 +281,10 @@ export function ReportButton() {
                       onClick={() => setSeverity(opt.value)}
                       disabled={submitting}
                       title={opt.hint}
-                      className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all disabled:opacity-50 ${SEVERITY_STYLES[opt.value].button} ${
-                        severity === opt.value ? 'ring-2 ring-offset-2 ring-slate-900 dark:ring-offset-slate-900' : 'opacity-50 hover:opacity-80'
+                      className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        severity === opt.value
+                          ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       {opt.label}

@@ -35,17 +35,17 @@ $u = current_user();
       <p class="mb-1.5 text-xs font-medium text-slate-500">ระดับความเร่งด่วน</p>
       <div id="reportSeverityGroup" class="mb-3 grid grid-cols-3 gap-1.5">
         <button type="button" data-severity="critical" onclick="setReportSeverity('critical')"
-          class="report-severity-btn rounded-xl px-2 py-2 text-xs font-semibold transition-all bg-red-600 hover:bg-red-700 text-white opacity-50 hover:opacity-80"
+          class="report-severity-btn rounded-xl border px-2 py-2 text-xs font-medium transition-colors border-slate-200 text-slate-600 hover:bg-slate-50"
           title="ระบบพังถาวร ทำงานต่อไม่ได้เลย">
           ด่วนที่สุด
         </button>
         <button type="button" data-severity="high" onclick="setReportSeverity('high')"
-          class="report-severity-btn rounded-xl px-2 py-2 text-xs font-semibold transition-all bg-amber-500 hover:bg-amber-600 text-white opacity-50 hover:opacity-80"
+          class="report-severity-btn rounded-xl border px-2 py-2 text-xs font-medium transition-colors border-slate-200 text-slate-600 hover:bg-slate-50"
           title="ทำงานได้บางส่วน แต่กระทบงานหลัก">
           ด่วน
         </button>
         <button type="button" data-severity="normal" onclick="setReportSeverity('normal')"
-          class="report-severity-btn rounded-xl px-2 py-2 text-xs font-semibold transition-all bg-green-600 hover:bg-green-700 text-white ring-2 ring-offset-2 ring-slate-900"
+          class="report-severity-btn rounded-xl border px-2 py-2 text-xs font-medium transition-colors border-slate-900 bg-slate-900 text-white"
           title="ปัญหาทั่วไป/ข้อเสนอแนะ">
           ทั่วไป
         </button>
@@ -90,7 +90,7 @@ const REPORT_STATUS_STEPS = [
   { key: 'pending_user', label: 'รอข้อมูลเพิ่มเติม' },
   { key: 'resolved', label: 'แก้ไขเรียบร้อย' },
 ];
-const REPORT_SEVERITY_DOT = { critical: 'bg-red-500', high: 'bg-amber-500', normal: 'bg-green-500' };
+const REPORT_SEVERITY_LABEL = { critical: 'ด่วนที่สุด', high: 'ด่วน', normal: 'ทั่วไป' };
 
 function switchReportView(view) {
   const isNew = view === 'new';
@@ -124,12 +124,12 @@ function issueProgressHtml(status) {
 }
 
 function issueHistoryCardHtml(issue) {
-  const dot = REPORT_SEVERITY_DOT[issue.severity] || 'bg-slate-300';
+  const label = REPORT_SEVERITY_LABEL[issue.severity] || issue.severity;
   const date = new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
   return `<div class="rounded-xl border border-slate-200 p-3.5">
     <div class="mb-1.5 flex items-start justify-between gap-2">
       <p class="flex-1 line-clamp-2 text-sm text-slate-800">${escapeHtml(issue.description)}</p>
-      <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${dot}"></span>
+      <span class="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-500">${label}</span>
     </div>
     <p class="mb-3 text-[11px] text-slate-400">${date}</p>
     ${issueProgressHtml(issue.status)}
@@ -166,11 +166,11 @@ function setReportSeverity(value) {
   reportSeverity = value;
   document.querySelectorAll('.report-severity-btn').forEach((btn) => {
     const active = btn.dataset.severity === value;
-    btn.classList.toggle('ring-2', active);
-    btn.classList.toggle('ring-offset-2', active);
-    btn.classList.toggle('ring-slate-900', active);
-    btn.classList.toggle('opacity-50', !active);
-    btn.classList.toggle('hover:opacity-80', !active);
+    btn.classList.toggle('border-slate-900', active);
+    btn.classList.toggle('bg-slate-900', active);
+    btn.classList.toggle('text-white', active);
+    btn.classList.toggle('border-slate-200', !active);
+    btn.classList.toggle('text-slate-600', !active);
   });
 }
 
