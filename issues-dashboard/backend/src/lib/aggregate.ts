@@ -1,13 +1,21 @@
-import { sources } from './sources.js'
-
+// Single source now: the central issue-service (see issue-service's README
+// "Frontend wiring checklist" — its GET /api/issues was built specifically
+// for this dashboard to pull from). Each of the 5 systems used to run its
+// own local issue table that this file fanned out to individually; those
+// are dead now that every system's report button posts straight to
+// issue-service instead.
 export interface NormalizedIssue {
   system: string
   id: string
   description: string
   page: string | null
+  severity: 'critical' | 'high' | 'normal'
+  status: string
+  statusLabel: string
   reporterName: string | null
   reporterRole: string | null
   createdAt: string
+  updatedAt: string
 }
 
 export interface SourceStatus {
@@ -23,21 +31,22 @@ export interface AggregateResult {
 
 const TIMEOUT_MS = 5000
 
-async function fetchSource(
-  source: (typeof sources)[number],
-  limit: number
-): Promise<{ status: SourceStatus; issues: NormalizedIssue[] }> {
+function env(name: string): string {
+  return process.env[name] ?? ''
+}
+
+export async function aggregateIssues(limit: number): Promise<AggregateResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
   try {
-    const res = await fetch(`${source.url}?limit=${limit}`, {
-      headers: { 'X-Dashboard-Key': source.apiKey },
+    const res = await fetch(`${env('ISSUE_SERVICE_URL')}/api/issues?limit=${limit}`, {
+      headers: { 'X-Dashboard-Key': env('ISSUE_SERVICE_DASHBOARD_KEY') },
       signal: controller.signal,
     })
 
     if (!res.ok) {
-      return { status: { system: source.name, ok: false, error: `HTTP ${res.status}` }, issues: [] }
+      return { issues: [], sources: [{ system: 'issue-service', ok: false, error: `HTTP ${res.status}` }] }
     }
 
     const body = (await res.json()) as { issues?: unknown[] }
@@ -46,33 +55,27 @@ async function fetchSource(
     const issues = raw.map((item): NormalizedIssue => {
       const i = item as Record<string, unknown>
       return {
-        system: source.name,
+        system: String(i.system ?? ''),
         id: String(i.id),
         description: String(i.description ?? ''),
         page: (i.page as string) ?? null,
+        severity: (i.severity as NormalizedIssue['severity']) ?? 'normal',
+        status: String(i.status ?? 'submitted'),
+        statusLabel: String(i.statusLabel ?? ''),
         reporterName: (i.reporterName as string) ?? null,
         reporterRole: (i.reporterRole as string) ?? null,
         createdAt: String(i.createdAt),
+        updatedAt: String(i.updatedAt ?? i.createdAt),
       }
     })
 
-    return { status: { system: source.name, ok: true }, issues }
+    return { issues, sources: [{ system: 'issue-service', ok: true }] }
   } catch (err) {
     return {
-      status: { system: source.name, ok: false, error: err instanceof Error ? err.message : 'fetch failed' },
       issues: [],
+      sources: [{ system: 'issue-service', ok: false, error: err instanceof Error ? err.message : 'fetch failed' }],
     }
   } finally {
     clearTimeout(timeout)
   }
-}
-
-export async function aggregateIssues(limit: number): Promise<AggregateResult> {
-  const results = await Promise.all(sources.map((s) => fetchSource(s, limit)))
-
-  const issues = results
-    .flatMap((r) => r.issues)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-  return { issues, sources: results.map((r) => r.status) }
 }

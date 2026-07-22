@@ -72,14 +72,13 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
     return issues.filter((i) => isWithinDays(i.createdAt, RANGE_DAYS[range]))
   }, [issues, range])
 
-  const resolved = useMemo(() => filtered.filter((i) => i.status === 'Resolved'), [filtered])
+  const resolved = useMemo(() => filtered.filter((i) => i.status === 'resolved'), [filtered])
 
   const resolutionRate = filtered.length > 0 ? (resolved.length / filtered.length) * 100 : 0
 
   const avgResolutionMs = useMemo(() => {
     const durations = resolved
-      .filter((i) => i.statusUpdatedAt)
-      .map((i) => new Date(i.statusUpdatedAt as string).getTime() - new Date(i.createdAt).getTime())
+      .map((i) => new Date(i.updatedAt).getTime() - new Date(i.createdAt).getTime())
       .filter((ms) => Number.isFinite(ms) && ms >= 0)
     if (durations.length === 0) return null
     return durations.reduce((a, b) => a + b, 0) / durations.length

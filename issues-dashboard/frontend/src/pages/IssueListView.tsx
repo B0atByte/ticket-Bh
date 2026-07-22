@@ -6,6 +6,7 @@ import {
   updateIssueStatus,
   type Issue,
   type IssueStatusValue,
+  type Severity,
   type SourceStatus,
 } from '../lib/api'
 import { useI18n } from '../lib/i18n'
@@ -37,12 +38,25 @@ function systemLink(issue: Pick<Issue, 'system' | 'page'>): string | null {
 }
 
 const STATUS_KEYS: Record<IssueStatusValue, string> = {
-  New: 'status.New',
-  'In Progress': 'status.InProgress',
-  Resolved: 'status.Resolved',
+  submitted: 'status.submitted',
+  acknowledged: 'status.acknowledged',
+  pending_user: 'status.pending_user',
+  resolved: 'status.resolved',
 }
 
-const ALL_STATUSES: IssueStatusValue[] = ['New', 'In Progress', 'Resolved']
+const ALL_STATUSES: IssueStatusValue[] = ['submitted', 'acknowledged', 'pending_user', 'resolved']
+
+const SEVERITY_KEYS: Record<Severity, string> = {
+  critical: 'severity.critical',
+  high: 'severity.high',
+  normal: 'severity.normal',
+}
+
+const SEVERITY_COLORS: Record<Severity, string> = {
+  critical: 'bg-red-100 text-red-800',
+  high: 'bg-amber-100 text-amber-800',
+  normal: 'bg-slate-100 text-slate-800',
+}
 
 function formatTime(iso: string, lang: string): string {
   const d = new Date(iso)
@@ -206,7 +220,7 @@ export default function IssueListView({
         <div className="space-y-3">
           {filtered.map((issue) => (
             <div key={`${issue.system}-${issue.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 {systemLink(issue) ? (
                   <a
                     href={systemLink(issue)!}
@@ -222,7 +236,10 @@ export default function IssueListView({
                     {issue.system}
                   </span>
                 )}
-                <span className="text-xs text-slate-400">{formatTime(issue.createdAt, lang)}</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SEVERITY_COLORS[issue.severity]}`}>
+                  {t(SEVERITY_KEYS[issue.severity])}
+                </span>
+                <span className="ml-auto text-xs text-slate-400">{formatTime(issue.createdAt, lang)}</span>
               </div>
               <p className="mb-2 whitespace-pre-wrap text-sm text-slate-800">{issue.description}</p>
               <div className="flex flex-wrap items-center justify-between gap-2">

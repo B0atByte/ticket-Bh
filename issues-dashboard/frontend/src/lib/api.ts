@@ -12,18 +12,25 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-export type IssueStatusValue = 'New' | 'In Progress' | 'Resolved'
+// issue-service's real lifecycle (submitted → acknowledged → pending_user →
+// resolved) — this dashboard used to track its own separate New/In
+// Progress/Resolved status disconnected from what the reporter sees; now it
+// reads and writes issue-service's status directly so both sides agree.
+export type IssueStatusValue = 'submitted' | 'acknowledged' | 'pending_user' | 'resolved'
+export type Severity = 'critical' | 'high' | 'normal'
 
 export interface Issue {
   system: string
   id: string
   description: string
   page: string | null
+  severity: Severity
   reporterName: string | null
   reporterRole: string | null
   createdAt: string
+  updatedAt: string
   status: IssueStatusValue
-  statusUpdatedAt: string | null
+  statusLabel: string
 }
 
 export interface SourceStatus {
@@ -75,7 +82,7 @@ export function fetchHistoryIssues() {
 }
 
 export function updateIssueStatus(system: string, id: string, status: IssueStatusValue) {
-  return request<{ system: string; issueId: string; status: IssueStatusValue; updatedAt: string }>(
+  return request<{ issueId: string; status: IssueStatusValue; statusLabel: string; updatedAt: string }>(
     `/issues/${encodeURIComponent(system)}/${encodeURIComponent(id)}/status`,
     { method: 'PATCH', body: JSON.stringify({ status }) }
   )

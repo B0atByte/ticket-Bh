@@ -62,9 +62,15 @@ const DICT: Record<string, Entry> = {
   'card.unknown': { th: 'ไม่ระบุ', en: 'Unknown' },
   'card.statusUpdateFail': { th: 'อัปเดตสถานะไม่สำเร็จ', en: 'Failed to update status' },
 
-  'status.New': { th: 'ใหม่', en: 'New' },
-  'status.InProgress': { th: 'กำลังดำเนินการ', en: 'In Progress' },
-  'status.Resolved': { th: 'แก้ไขแล้ว', en: 'Resolved' },
+  'status.submitted': { th: 'ส่งเรื่องแล้ว', en: 'Submitted' },
+  'status.acknowledged': { th: 'รับเรื่องแล้ว', en: 'Acknowledged' },
+  'status.pending_user': { th: 'รอข้อมูลเพิ่มเติม', en: 'Pending user' },
+  'status.resolved': { th: 'แก้ไขเรียบร้อย', en: 'Resolved' },
+
+  'card.severity': { th: 'ความเร่งด่วน: ', en: 'Severity: ' },
+  'severity.critical': { th: 'ด่วนที่สุด', en: 'Critical' },
+  'severity.high': { th: 'ด่วน', en: 'High' },
+  'severity.normal': { th: 'ทั่วไป', en: 'Normal' },
 }
 
 interface I18n {

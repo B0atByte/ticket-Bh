@@ -3,12 +3,11 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { initStatusDb } from './lib/statusDb.js'
 import authRouter from './routes/auth.js'
 import issuesRouter from './routes/issues.js'
 
 function validateEnv() {
-  const required = ['JWT_SECRET', 'FRONTEND_URL']
+  const required = ['JWT_SECRET', 'FRONTEND_URL', 'ISSUE_SERVICE_URL', 'ISSUE_SERVICE_DASHBOARD_KEY']
   for (const key of required) {
     if (!process.env[key]) {
       console.error(`FATAL: Missing required environment variable: ${key}`)
@@ -25,7 +24,6 @@ function validateEnv() {
 }
 
 validateEnv()
-initStatusDb()
 
 const app = new Hono()
 
@@ -33,7 +31,7 @@ app.use(
   '*',
   cors({
     origin: process.env.FRONTEND_URL!,
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
 )
