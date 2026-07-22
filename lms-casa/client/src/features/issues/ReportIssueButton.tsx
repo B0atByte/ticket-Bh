@@ -132,7 +132,6 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
       )}
 
       <div className="border-t border-border pt-3">
-        <p className="mb-2.5 text-xs font-medium text-muted-foreground">ความคืบหน้า</p>
         <div className="space-y-3">
           {issue.history.map((h, i) => (
             <div key={i} className="flex gap-2.5">
