@@ -769,14 +769,12 @@ const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
 ];
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
-// (submitted → acknowledged → pending_user → resolved) — labels match what
-// admins see elsewhere (dashboard) so the reporter isn't shown different
-// wording for the same state.
+// (submitted → acknowledged → resolved). Issue Management shows its own
+// admin-facing wording for the same states — these are reporter-facing.
 const STATUS_STEPS: { key: IssueStatus; label: string }[] = [
   { key: 'submitted', label: 'ส่งเรื่องแล้ว' },
   { key: 'acknowledged', label: 'รับเรื่องแล้ว' },
-  { key: 'pending_user', label: 'รอข้อมูลเพิ่มเติม' },
-  { key: 'resolved', label: 'แก้ไขเรียบร้อย' },
+  { key: 'resolved', label: 'แก้ไขเสร็จสิ้น' },
 ];
 
 function IssueProgress({ status }: { status: IssueStatus }) {

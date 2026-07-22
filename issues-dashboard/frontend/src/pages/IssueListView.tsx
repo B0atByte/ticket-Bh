@@ -40,11 +40,10 @@ function systemLink(issue: Pick<Issue, 'system' | 'page'>): string | null {
 const STATUS_KEYS: Record<IssueStatusValue, string> = {
   submitted: 'status.submitted',
   acknowledged: 'status.acknowledged',
-  pending_user: 'status.pending_user',
   resolved: 'status.resolved',
 }
 
-const ALL_STATUSES: IssueStatusValue[] = ['submitted', 'acknowledged', 'pending_user', 'resolved']
+const ALL_STATUSES: IssueStatusValue[] = ['submitted', 'acknowledged', 'resolved']
 
 const SEVERITY_KEYS: Record<Severity, string> = {
   critical: 'severity.critical',

@@ -172,7 +172,7 @@ const updateStatusSchema = z.object({
 })
 
 // PATCH /:id/status  — admin moves an issue through the timeline
-// (submitted → acknowledged → pending_user → resolved, any direction).
+// (submitted → acknowledged → resolved, any direction).
 issueRoutes.patch('/:id/status', requireDashboardKey, async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid id' }, 400)

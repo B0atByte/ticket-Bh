@@ -34,7 +34,7 @@ export async function submitIssueReport(input: SubmitIssueInput): Promise<{ id: 
 
 // Status lifecycle from issue-service (src/constants.ts) — set on creation
 // (submitted) and only ever advanced by an admin, in this order.
-export type IssueStatus = 'submitted' | 'acknowledged' | 'pending_user' | 'resolved';
+export type IssueStatus = 'submitted' | 'acknowledged' | 'resolved';
 
 export interface IssueHistoryEntry {
   status: IssueStatus;

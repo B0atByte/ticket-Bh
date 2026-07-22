@@ -11,9 +11,9 @@ function parseLimit(raw: string | undefined): number {
   return Math.min(Math.max(Number(raw) || 100, 1), 500)
 }
 
-// issue-service's real lifecycle (submitted → acknowledged → pending_user →
-// resolved) — "history" is just the resolved tail of it.
-const ACTIVE_STATUSES = ['submitted', 'acknowledged', 'pending_user']
+// issue-service's real lifecycle (submitted → acknowledged → resolved) —
+// "history" is just the resolved tail of it.
+const ACTIVE_STATUSES = ['submitted', 'acknowledged']
 const HISTORY_STATUSES = ['resolved']
 
 router.get('/', async (c) => {
@@ -32,7 +32,7 @@ router.get('/history', async (c) => {
 })
 
 const statusSchema = z.object({
-  status: z.enum(['submitted', 'acknowledged', 'pending_user', 'resolved']),
+  status: z.enum(['submitted', 'acknowledged', 'resolved']),
 })
 
 // :system is kept in the URL for frontend-call compatibility but unused —

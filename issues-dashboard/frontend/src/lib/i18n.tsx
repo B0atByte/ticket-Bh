@@ -62,10 +62,11 @@ const DICT: Record<string, Entry> = {
   'card.unknown': { th: 'ไม่ระบุ', en: 'Unknown' },
   'card.statusUpdateFail': { th: 'อัปเดตสถานะไม่สำเร็จ', en: 'Failed to update status' },
 
-  'status.submitted': { th: 'ส่งเรื่องแล้ว', en: 'Submitted' },
+  // Admin-facing wording — deliberately different from what the reporter
+  // sees for "submitted" (they get 'ส่งเรื่องแล้ว', admins get 'ใหม่').
+  'status.submitted': { th: 'ใหม่', en: 'New' },
   'status.acknowledged': { th: 'รับเรื่องแล้ว', en: 'Acknowledged' },
-  'status.pending_user': { th: 'รอข้อมูลเพิ่มเติม', en: 'Pending user' },
-  'status.resolved': { th: 'แก้ไขเรียบร้อย', en: 'Resolved' },
+  'status.resolved': { th: 'แก้ไขเสร็จสิ้น', en: 'Resolved' },
 
   'card.severity': { th: 'ความเร่งด่วน: ', en: 'Severity: ' },
   'severity.critical': { th: 'ด่วนที่สุด', en: 'Critical' },

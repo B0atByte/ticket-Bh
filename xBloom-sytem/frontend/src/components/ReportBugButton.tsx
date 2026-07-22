@@ -18,8 +18,8 @@ import { swalToast } from "../lib/swal";
 const SEVERITIES: Severity[] = ["critical", "high", "normal"];
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
-// (submitted → acknowledged → pending_user → resolved).
-const STATUS_STEPS: IssueStatus[] = ["submitted", "acknowledged", "pending_user", "resolved"];
+// (submitted → acknowledged → resolved).
+const STATUS_STEPS: IssueStatus[] = ["submitted", "acknowledged", "resolved"];
 
 function IssueProgress({ status, t }: { status: IssueStatus; t: (key: string) => string }) {
   const currentIndex = STATUS_STEPS.indexOf(status);

@@ -12,11 +12,12 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-// issue-service's real lifecycle (submitted → acknowledged → pending_user →
-// resolved) — this dashboard used to track its own separate New/In
-// Progress/Resolved status disconnected from what the reporter sees; now it
-// reads and writes issue-service's status directly so both sides agree.
-export type IssueStatusValue = 'submitted' | 'acknowledged' | 'pending_user' | 'resolved'
+// issue-service's real lifecycle (submitted → acknowledged → resolved) —
+// this dashboard used to track its own separate New/In Progress/Resolved
+// status disconnected from what the reporter sees; now it reads and writes
+// issue-service's status directly so both sides agree. Display wording can
+// still differ per audience — see STATUS_KEYS/i18n in IssueListView.
+export type IssueStatusValue = 'submitted' | 'acknowledged' | 'resolved'
 export type Severity = 'critical' | 'high' | 'normal'
 
 export interface Issue {
