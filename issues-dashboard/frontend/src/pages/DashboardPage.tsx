@@ -1,21 +1,25 @@
-import { BarChart3, LayoutDashboard, ListChecks, LogOut } from 'lucide-react'
+import { BarChart3, History, LayoutDashboard, ListChecks, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import AnalyticsView from '../components/analytics/AnalyticsView'
 import LangToggle from '../components/LangToggle'
-import { clearToken } from '../lib/api'
+import { clearToken, type SourceStatus } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import IssueListView from './IssueListView'
 
-type MainTab = 'issues' | 'analytics'
+type MainTab = 'issues' | 'history' | 'analytics'
 
 export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void }) {
   const { t } = useI18n()
   const [mainTab, setMainTab] = useState<MainTab>('issues')
+  const [sources, setSources] = useState<SourceStatus[]>([])
 
   function handleLogout() {
     clearToken()
     onLoggedOut()
   }
+
+  const okCount = sources.filter((s) => s.ok).length
+  const totalSources = sources.length
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8">
@@ -27,7 +31,16 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
               <LayoutDashboard size={18} />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Issue Management</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold text-slate-900">Issue Management</h1>
+                {totalSources > 0 && (
+                  <span className="text-xs text-slate-400">
+                    {okCount === totalSources
+                      ? t('conn.good', { ok: okCount, total: totalSources })
+                      : t('conn.partial', { ok: okCount, total: totalSources })}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-500">{t('app.subtitle')}</p>
             </div>
           </div>
@@ -55,6 +68,15 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
             {t('maintab.issues')}
           </button>
           <button
+            onClick={() => setMainTab('history')}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              mainTab === 'history' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <History size={14} />
+            {t('tab.history')}
+          </button>
+          <button
             onClick={() => setMainTab('analytics')}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               mainTab === 'analytics' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -65,7 +87,13 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
           </button>
         </div>
 
-        {mainTab === 'issues' ? <IssueListView onLoggedOut={onLoggedOut} /> : <AnalyticsView onLoggedOut={onLoggedOut} />}
+        {mainTab === 'issues' ? (
+          <IssueListView tab="active" onLoggedOut={onLoggedOut} onSourcesChange={setSources} />
+        ) : mainTab === 'history' ? (
+          <IssueListView tab="history" onLoggedOut={onLoggedOut} onSourcesChange={setSources} />
+        ) : (
+          <AnalyticsView onLoggedOut={onLoggedOut} />
+        )}
       </div>
     </div>
   )

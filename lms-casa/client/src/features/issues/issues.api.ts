@@ -1,4 +1,4 @@
-import { submitIssueReport, type Severity } from '../../lib/issueService';
+import { fetchMyIssues, submitIssueReport, type MyIssue, type Severity } from '../../lib/issueService';
 
 export function createIssue(input: {
   description: string;
@@ -10,4 +10,8 @@ export function createIssue(input: {
   attachment?: File | null;
 }): Promise<{ id: string }> {
   return submitIssueReport(input);
+}
+
+export function getMyIssues(reporterId: string): Promise<MyIssue[]> {
+  return fetchMyIssues(reporterId);
 }

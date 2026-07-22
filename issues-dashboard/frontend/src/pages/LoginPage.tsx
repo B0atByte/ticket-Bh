@@ -9,12 +9,11 @@ export default function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function submit(pw: string) {
     setError(null)
     setLoading(true)
     try {
-      const { token } = await login(password)
+      const { token } = await login(pw)
       setToken(token)
       onLoggedIn()
     } catch (err) {
@@ -22,6 +21,11 @@ export default function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    void submit(password)
   }
 
   return (
@@ -49,6 +53,15 @@ export default function LoginPage({ onLoggedIn }: { onLoggedIn: () => void }) {
           className="w-full rounded-lg bg-slate-900 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
         >
           {loading ? t('login.submitting') : t('login.submit')}
+        </button>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void submit('admin123')}
+          className="mt-3 w-full rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50"
+        >
+          Quick Access — Admin
         </button>
       </form>
     </div>

@@ -7,15 +7,14 @@ import {
   Shield, KeyRound, UserPlus, BarChart2,
   FileCheck, Send, Banknote, History, RefreshCw, Menu, Package,
   Download, Filter, CalendarDays, MessageSquare, ChevronLeft,
-  ExternalLink, MapPin, Image, Bug, Loader2, Grid2x2
+  ExternalLink, MapPin, Image, Bug, Loader2
 } from 'lucide-react';
 import {
   ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, CATEGORIES,
   type User, type PurchaseRequest, type PurchaseItem, type AuditLog, type Role
 } from './data';
 import { api } from './lib/api';
-import { submitIssueReport, type Severity } from './lib/issueService';
-import { otherSystems } from './lib/quickAccess';
+import { fetchMyIssues, submitIssueReport, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
 import './index.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -598,6 +597,14 @@ function FileButton({ label, raw }: { label: string; raw: string }) {
 // ═══════════════════════════════════════════════════════════════════
 // LOGIN PAGE
 // ═══════════════════════════════════════════════════════════════════
+const QUICK_LOGIN_USERS: { username: string; role: Role }[] = [
+  { username: 'owner', role: 'owner' },
+  { username: 'employee', role: 'employee' },
+  { username: 'purchasing', role: 'purchasing' },
+  { username: 'accounting', role: 'accounting' },
+  { username: 'itsupport', role: 'itsupport' },
+];
+
 function LoginPage({ onLogin, siteSettings }: { onLogin: (u: User) => void; siteSettings: SiteSettings }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -728,6 +735,21 @@ function LoginPage({ onLogin, siteSettings }: { onLogin: (u: User) => void; site
             </div>
           )}
         </div>
+
+        {!showForgot && (
+          <div className="mt-5">
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 mb-2">Quick Access</p>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {QUICK_LOGIN_USERS.map(u => (
+                <button key={u.username} type="button" onClick={() => doLogin(u.username, '1234')} disabled={loading}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors disabled:opacity-50 hover:brightness-95 ${ROLE_COLORS[u.role]}`}>
+                  {ROLE_LABELS[u.role]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <p className="mt-5 text-center text-[11px] text-slate-400 dark:text-slate-600">
           Copyright © {new Date().getFullYear()} Brewing Happiness. All rights reserved.
         </p>
@@ -745,6 +767,60 @@ const SEVERITY_OPTIONS: { value: Severity; emoji: string; label: string; hint: s
   { value: 'high', emoji: '🟡', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
   { value: 'normal', emoji: '🟢', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
 ];
+
+// Positional 1:1 mapping of issue-service's real status lifecycle
+// (submitted → acknowledged → pending_user → resolved) — labels match what
+// admins see elsewhere (dashboard) so the reporter isn't shown different
+// wording for the same state.
+const STATUS_STEPS: { key: IssueStatus; label: string }[] = [
+  { key: 'submitted', label: 'ส่งเรื่องแล้ว' },
+  { key: 'acknowledged', label: 'รับเรื่องแล้ว' },
+  { key: 'pending_user', label: 'รอข้อมูลเพิ่มเติม' },
+  { key: 'resolved', label: 'แก้ไขเรียบร้อย' },
+];
+
+function IssueProgress({ status }: { status: IssueStatus }) {
+  const currentIndex = STATUS_STEPS.findIndex(s => s.key === status);
+  const isResolved = status === 'resolved';
+  const activeColor = isResolved ? 'bg-green-500' : 'bg-red-500';
+
+  return (
+    <div className="flex items-start">
+      {STATUS_STEPS.map((step, i) => {
+        const reached = i <= currentIndex;
+        return (
+          <div key={step.key} className="flex flex-1 items-start last:flex-none">
+            <div className="flex w-14 flex-col items-center gap-1 shrink-0">
+              <div className={`h-2.5 w-2.5 rounded-full ${reached ? activeColor : 'bg-slate-200 dark:bg-slate-700'}`} />
+              <span className={`text-center text-[9px] leading-tight ${reached ? 'font-medium text-slate-700 dark:text-slate-300' : 'text-slate-400 dark:text-slate-600'}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < STATUS_STEPS.length - 1 && (
+              <div className={`mt-[5px] h-0.5 flex-1 ${i < currentIndex ? activeColor : 'bg-slate-200 dark:bg-slate-700'}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function IssueHistoryCard({ issue }: { issue: MyIssue }) {
+  const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <p className="flex-1 line-clamp-2 text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
+        {sev && <span className="shrink-0 text-sm" title={sev.label}>{sev.emoji}</span>}
+      </div>
+      <p className="mb-3 text-[11px] text-slate-400 dark:text-slate-500">
+        {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+      </p>
+      <IssueProgress status={issue.status} />
+    </div>
+  );
+}
 
 const MENU: MenuItem[] = [
   { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard, roles: ['owner', 'itsupport'] },
@@ -766,8 +842,8 @@ const MENU: MenuItem[] = [
   { id: 'discord-settings', label: 'Discord แจ้งเตือน', icon: MessageSquare, roles: ['itsupport'] },
 ];
 
-function Sidebar({ user, page, setPage, collapsed, dark, toggleDark, mobileOpen, setMobileOpen, siteSettings }: {
-  user: User; page: Page; setPage: (p: Page) => void; collapsed: boolean; dark: boolean; toggleDark: () => void; mobileOpen: boolean; setMobileOpen: (v: boolean) => void; siteSettings: SiteSettings;
+function Sidebar({ user, page, setPage, collapsed, dark, toggleDark, mobileOpen, setMobileOpen, siteSettings, onReportIssue }: {
+  user: User; page: Page; setPage: (p: Page) => void; collapsed: boolean; dark: boolean; toggleDark: () => void; mobileOpen: boolean; setMobileOpen: (v: boolean) => void; siteSettings: SiteSettings; onReportIssue: () => void;
 }) {
   const items = MENU.filter(m => m.roles.includes(user.role));
   return (
@@ -821,8 +897,17 @@ function Sidebar({ user, page, setPage, collapsed, dark, toggleDark, mobileOpen,
         })}
       </nav>
 
+      {/* Report issue */}
+      <div className="px-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+        <button onClick={onReportIssue} title={collapsed ? 'รายงานปัญหา' : undefined}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}>
+          <Bug size={17} className="shrink-0" />
+          {!collapsed && <span className="truncate">รายงานปัญหา</span>}
+        </button>
+      </div>
+
       {/* Bottom */}
-      <div className={`p-2.5 border-t border-slate-100 dark:border-slate-800 ${collapsed ? 'flex flex-col gap-1 items-center' : 'flex gap-1'}`}>
+      <div className={`p-2.5 ${collapsed ? 'flex flex-col gap-1 items-center' : 'flex gap-1'}`}>
         <button onClick={toggleDark} title="Toggle Dark Mode"
           className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
           {dark ? <Sun size={15} /> : <Moon size={15} />}
@@ -840,7 +925,6 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
 }) {
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showQuickAccess, setShowQuickAccess] = useState(false);
 
   const pageTitles: Partial<Record<Page, string>> = {
     dashboard: 'แดชบอร์ด', 'my-requests': 'คำขอของฉัน', 'create-request': 'สร้างใบขอซื้อ',
@@ -876,7 +960,7 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
 
       {/* Notification */}
       <div className="relative">
-        <button onClick={() => { setShowNotif(!showNotif); setShowUserMenu(false); setShowQuickAccess(false); }}
+        <button onClick={() => { setShowNotif(!showNotif); setShowUserMenu(false); }}
           className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
           <Bell size={17} />
           {badgeCount > 0 && (
@@ -901,29 +985,9 @@ function Topbar({ page, user, requests, onLogout, collapsed, setCollapsed, mobil
         )}
       </div>
 
-      {/* Quick access — other systems */}
-      <div className="relative">
-        <button onClick={() => { setShowQuickAccess(!showQuickAccess); setShowNotif(false); setShowUserMenu(false); }}
-          className="relative w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-white transition-colors">
-          <Grid2x2 size={17} />
-        </button>
-        {showQuickAccess && (
-          <div className="absolute right-0 top-11 w-60 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 z-50 p-1.5 overflow-hidden">
-            <p className="px-2.5 py-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500">ไปยังระบบอื่น</p>
-            {otherSystems('prsystem').map(s => (
-              <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <span className="truncate">{s.label}</span>
-                <ExternalLink size={13} className="shrink-0 text-slate-400" />
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* User menu */}
       <div className="relative">
-        <button onClick={() => { setShowUserMenu(!showUserMenu); setShowNotif(false); setShowQuickAccess(false); }}
+        <button onClick={() => { setShowUserMenu(!showUserMenu); setShowNotif(false); }}
           className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <div className="w-8 h-8 rounded-full bg-[#206bc4]/10 dark:bg-blue-900/40 flex items-center justify-center text-[#206bc4] dark:text-blue-300 font-bold text-sm">{user.name.charAt(0)}</div>
           <span className="text-sm text-slate-700 dark:text-slate-200 font-medium hidden sm:block max-w-[100px] truncate">{user.name.split(' ')[0]}</span>
@@ -4037,6 +4101,10 @@ export default function App() {
   const [reportSeverity, setReportSeverity] = useState<Severity>('normal');
   const [reportAttachment, setReportAttachment] = useState<File | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportView, setReportView] = useState<'new' | 'history'>('new');
+  const [reportHistory, setReportHistory] = useState<MyIssue[]>([]);
+  const [reportHistoryLoading, setReportHistoryLoading] = useState(false);
+  const [reportHistoryError, setReportHistoryError] = useState<string | null>(null);
 
   // Inline modal form fields
   const [prFile, setPrFile] = useState('');
@@ -4218,6 +4286,18 @@ export default function App() {
     } catch (err: any) { toast(err.message || 'เกิดข้อผิดพลาด', 'error'); }
   };
 
+  useEffect(() => {
+    if (!reportOpen || reportView !== 'history' || !currentUser) return;
+    let cancelled = false;
+    setReportHistoryLoading(true);
+    setReportHistoryError(null);
+    fetchMyIssues(currentUser.id)
+      .then(data => { if (!cancelled) setReportHistory(data); })
+      .catch(err => { if (!cancelled) setReportHistoryError(err instanceof Error ? err.message : 'โหลดประวัติการแจ้งปัญหาไม่สำเร็จ'); })
+      .finally(() => { if (!cancelled) setReportHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [reportOpen, reportView, currentUser?.id]);
+
   const handleReportIssue = async () => {
     if (reportDesc.trim().length < 5) {
       toast('กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร', 'error');
@@ -4236,6 +4316,7 @@ export default function App() {
       });
       toast('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
       setReportOpen(false);
+      setReportView('new');
       setReportDesc('');
       setReportSeverity('normal');
       setReportAttachment(null);
@@ -4284,7 +4365,7 @@ export default function App() {
   return (
     <div className={`flex h-screen overflow-hidden ${dark ? 'dark' : ''} bg-[#f4f6fb] dark:bg-slate-950`}>
       {mobileOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMobileOpen(false)} />}
-      <Sidebar user={currentUser} page={page} setPage={navigate} collapsed={collapsed} dark={dark} toggleDark={() => setDark(!dark)} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} siteSettings={siteSettings} />
+      <Sidebar user={currentUser} page={page} setPage={navigate} collapsed={collapsed} dark={dark} toggleDark={() => setDark(!dark)} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} siteSettings={siteSettings} onReportIssue={() => setReportOpen(true)} />
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar page={page} user={currentUser} requests={requests} onLogout={handleLogout} collapsed={collapsed} setCollapsed={setCollapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
@@ -4311,19 +4392,10 @@ export default function App() {
       <PageLoader loading={isLoading} />
       <ToastContainer toasts={toasts} remove={id => setToasts(t => t.filter(x => x.id !== id))} />
 
-      {/* Report Issue Button */}
-      <button
-        onClick={() => setReportOpen(true)}
-        className="fixed bottom-20 sm:bottom-4 left-4 z-40 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold pl-3 pr-4 py-2.5 rounded-full shadow-lg shadow-red-600/30 transition-colors"
-      >
-        <Bug size={18} />
-        แจ้งปัญหา
-      </button>
-
-      <Modal open={reportOpen} title="แจ้งปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); } }}
-        footer={
+      <Modal open={reportOpen} title="รายงานปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); } }}
+        footer={reportView === 'new' ? (
           <div className="flex gap-2">
-            <button onClick={() => { setReportOpen(false); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
+            <button onClick={() => { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
               className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
               ยกเลิก
             </button>
@@ -4333,29 +4405,68 @@ export default function App() {
               ส่งแจ้งปัญหา
             </button>
           </div>
-        }>
-        <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">ระดับความเร่งด่วน</p>
-        <div className="mb-3 grid grid-cols-3 gap-1.5">
-          {SEVERITY_OPTIONS.map(opt => (
-            <button key={opt.value} type="button" onClick={() => setReportSeverity(opt.value)} disabled={reportSubmitting} title={opt.hint}
-              className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
-                reportSeverity === opt.value
-                  ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}>
-              <div>{opt.emoji}</div>
-              <div>{opt.label}</div>
-            </button>
-          ))}
+        ) : undefined}>
+        <div className="mb-4 grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+          <button type="button" onClick={() => setReportView('new')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
+              reportView === 'new'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}>
+            <Bug size={13} />
+            แจ้งปัญหาใหม่
+          </button>
+          <button type="button" onClick={() => setReportView('history')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-colors ${
+              reportView === 'history'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}>
+            <History size={13} />
+            ประวัติของฉัน
+          </button>
         </div>
-        <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
-          placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
-        <label className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-          <Upload size={14} className="shrink-0" />
-          <span className="truncate">{reportAttachment ? reportAttachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>
-          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" disabled={reportSubmitting}
-            onChange={e => setReportAttachment(e.target.files?.[0] ?? null)} className="hidden" />
-        </label>
+
+        {reportView === 'new' ? (
+          <>
+            <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">ระดับความเร่งด่วน</p>
+            <div className="mb-3 grid grid-cols-3 gap-1.5">
+              {SEVERITY_OPTIONS.map(opt => (
+                <button key={opt.value} type="button" onClick={() => setReportSeverity(opt.value)} disabled={reportSubmitting} title={opt.hint}
+                  className={`rounded-xl border px-2 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${
+                    reportSeverity === opt.value
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}>
+                  <div>{opt.emoji}</div>
+                  <div>{opt.label}</div>
+                </button>
+              ))}
+            </div>
+            <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
+              placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
+            <label className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+              <Upload size={14} className="shrink-0" />
+              <span className="truncate">{reportAttachment ? reportAttachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>
+              <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" disabled={reportSubmitting}
+                onChange={e => setReportAttachment(e.target.files?.[0] ?? null)} className="hidden" />
+            </label>
+          </>
+        ) : (
+          <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
+            {reportHistoryLoading ? (
+              <div className="flex items-center justify-center py-10 text-slate-400 dark:text-slate-600">
+                <Loader2 size={20} className="animate-spin" />
+              </div>
+            ) : reportHistoryError ? (
+              <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">{reportHistoryError}</p>
+            ) : reportHistory.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">ยังไม่มีประวัติการแจ้งปัญหา</p>
+            ) : (
+              reportHistory.map(issue => <IssueHistoryCard key={issue.id} issue={issue} />)
+            )}
+          </div>
+        )}
       </Modal>
 
       {/* Request Detail Modal */}

@@ -50,6 +50,15 @@ require __DIR__ . '/partials/head.php';
     <p class="text-center text-xs text-slate-400 mt-4">
       บัญชีเริ่มต้น · <span class="font-num font-medium text-slate-500">admin / admin123</span>
     </p>
+
+    <form method="post" class="mt-3">
+      <input type="hidden" name="username" value="admin">
+      <input type="hidden" name="password" value="admin123">
+      <button type="submit"
+        class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 hover:border-slate-400 text-xs font-medium py-2.5 transition">
+        <i data-lucide="zap" class="w-3.5 h-3.5" aria-hidden="true"></i> Quick Access — Admin
+      </button>
+    </form>
   </div>
 </main>
 <script>lucide.createIcons();</script>

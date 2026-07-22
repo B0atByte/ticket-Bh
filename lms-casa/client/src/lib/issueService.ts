@@ -33,3 +33,34 @@ export async function submitIssueReport(input: SubmitIssueInput): Promise<{ id: 
   if (!res.ok) throw new Error(body.error || 'ส่งแจ้งปัญหาไม่สำเร็จ กรุณาลองใหม่');
   return body;
 }
+
+// Status lifecycle from issue-service (src/constants.ts) — set on creation
+// (submitted) and only ever advanced by an admin, in this order.
+export type IssueStatus = 'submitted' | 'acknowledged' | 'pending_user' | 'resolved';
+
+export interface IssueHistoryEntry {
+  status: IssueStatus;
+  label: string;
+  emoji: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface MyIssue {
+  id: string;
+  description: string;
+  severity: Severity;
+  status: IssueStatus;
+  statusLabel: string;
+  statusEmoji: string;
+  createdAt: string;
+  history: IssueHistoryEntry[];
+}
+
+export async function fetchMyIssues(reporterId: string): Promise<MyIssue[]> {
+  const params = new URLSearchParams({ system: 'lms-casa', reporterId });
+  const res = await fetch(`${BASE_URL}/api/issues/mine?${params.toString()}`);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || 'โหลดประวัติการแจ้งปัญหาไม่สำเร็จ');
+  return body.issues;
+}

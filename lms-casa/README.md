@@ -52,9 +52,9 @@ lms-system/
 
 ดู `../Agenstimeline.md` section 1 (Project Brief)
 
-## แจ้งปัญหา (Report Issue)
+## รายงานปัญหา (Report Issue)
 
-ทุกหน้าหลังล็อกอิน (รวมหน้าเรียน) มีปุ่ม "แจ้งปัญหา" ลอยมุมซ้ายล่าง (`client/src/features/issues/ReportIssueButton.tsx`) ให้ผู้ใช้กดแจ้งปัญหาที่เจอได้ทันที
+ทุกหน้าใน AppShell มีแท็บ "รายงานปัญหา" อยู่ในหัวข้อ "จัดการ" ของ sidebar (`client/src/layout/AppShell.tsx`, dialog อยู่ที่ `client/src/features/issues/ReportIssueButton.tsx`) ให้ผู้ใช้กดแจ้งปัญหาที่เจอได้ทันที
 
 - Frontend ส่งคำอธิบายปัญหาพร้อม path ของหน้าปัจจุบันไปที่ `POST /api/v1/issues` (ต้อง login)
 - Backend (`server/src/modules/issues/`) validate ข้อมูล บันทึกลงตาราง `issues` พร้อมผู้แจ้ง (จาก JWT)

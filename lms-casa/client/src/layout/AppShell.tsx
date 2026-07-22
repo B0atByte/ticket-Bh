@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
   BookOpen,
+  Bug,
   Building2,
   ClipboardCheck,
   ClipboardList,
@@ -23,8 +24,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { applyBranding, getBranding } from '../features/admin/admin.api';
 import { logout } from '../features/auth/auth.api';
 import { useAuthStore } from '../features/auth/auth.store';
+import { ReportIssueDialog } from '../features/issues/ReportIssueButton';
 import { NotificationsMenu } from '../features/notifications/NotificationsMenu';
-import { QuickAccessMenu } from '../components/QuickAccessMenu';
 import { cn } from '../lib/utils';
 
 const navGroups = [
@@ -69,6 +70,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const hasPermission = useAuthStore((state) => state.hasPermission);
@@ -96,7 +98,7 @@ export function AppShell() {
       titleKey: group.titleKey,
       items: group.items.filter((item) => !item.permission || hasPermission(item.permission)),
     }))
-    .filter((group) => group.items.length > 0);
+    .filter((group) => group.items.length > 0 || group.titleKey === 'nav.sectionAdmin');
 
   const appName = brandingQuery.data?.name ?? t('app.name');
   const logoUrl  = brandingQuery.data?.logoUrl;
@@ -129,6 +131,16 @@ export function AppShell() {
                   <span className="truncate">{t(item.labelKey)}</span>
                 </NavLink>
               ))}
+              {group.titleKey === 'nav.sectionAdmin' && (
+                <button
+                  type="button"
+                  onClick={() => { setMobileOpen(false); setReportOpen(true); }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                >
+                  <Bug className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate">{t('nav.reportIssue')}</span>
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -217,7 +229,6 @@ export function AppShell() {
           <div className="hidden md:block" />
 
           <div className="flex items-center gap-1">
-            <QuickAccessMenu />
             <NotificationsMenu />
             <button
               type="button"
@@ -235,6 +246,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <ReportIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 }

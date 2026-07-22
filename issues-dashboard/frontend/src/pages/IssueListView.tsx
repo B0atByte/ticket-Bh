@@ -1,4 +1,4 @@
-import { AlertTriangle, ChevronDown, History, ListChecks, RefreshCw, Search } from 'lucide-react'
+import { ExternalLink, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   fetchActiveIssues,
@@ -18,8 +18,22 @@ const SYSTEM_COLORS: Record<string, string> = {
   'QSC-Sytem': 'bg-amber-100 text-amber-800',
 }
 
+const SYSTEM_URLS: Record<string, string> = {
+  Bhlogisticssystem: 'http://localhost:5173',
+  PRsystem: 'http://localhost:5174',
+  'lms-casa': 'http://localhost:5175',
+  xBloom: 'http://localhost:5176',
+  'QSC-Sytem': 'http://localhost:8083',
+}
+
 function badgeClass(system: string): string {
   return SYSTEM_COLORS[system] ?? 'bg-slate-100 text-slate-800'
+}
+
+function systemLink(issue: Pick<Issue, 'system' | 'page'>): string | null {
+  const base = SYSTEM_URLS[issue.system]
+  if (!base) return null
+  return issue.page ? `${base}${issue.page}` : base
 }
 
 const STATUS_KEYS: Record<IssueStatusValue, string> = {
@@ -53,19 +67,24 @@ function isToday(iso: string): boolean {
 }
 
 type DateFilter = 'all' | 'today' | '7d' | '30d'
-type Tab = 'active' | 'history'
+export type Tab = 'active' | 'history'
 
-export default function IssueListView({ onLoggedOut }: { onLoggedOut: () => void }) {
+export default function IssueListView({
+  tab,
+  onLoggedOut,
+  onSourcesChange,
+}: {
+  tab: Tab
+  onLoggedOut: () => void
+  onSourcesChange?: (sources: SourceStatus[]) => void
+}) {
   const { t, lang } = useI18n()
-  const [tab, setTab] = useState<Tab>('active')
   const [issues, setIssues] = useState<Issue[]>([])
-  const [sources, setSources] = useState<SourceStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [systemFilter, setSystemFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [statusExpanded, setStatusExpanded] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -73,7 +92,7 @@ export default function IssueListView({ onLoggedOut }: { onLoggedOut: () => void
     try {
       const data = tab === 'active' ? await fetchActiveIssues() : await fetchHistoryIssues()
       setIssues(data.issues)
-      setSources(data.sources)
+      onSourcesChange?.(data.sources)
     } catch (err) {
       if (err instanceof Error && err.message === 'Unauthorized') {
         onLoggedOut()
@@ -123,86 +142,10 @@ export default function IssueListView({ onLoggedOut }: { onLoggedOut: () => void
 
   const stats = useMemo(() => ({ total: issues.length }), [issues])
 
-  const okCount = sources.filter((s) => s.ok).length
-  const totalSources = sources.length
-  const failedSources = sources.filter((s) => !s.ok)
-  const connectionTone =
-    totalSources === 0 || okCount === totalSources
-      ? 'good'
-      : okCount === 0
-        ? 'critical'
-        : 'warning'
-  const connectionStyles: Record<string, string> = {
-    good: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200',
-    critical: 'bg-red-50 text-red-800 border-red-200',
-  }
-  const connectionDot: Record<string, string> = {
-    good: 'bg-emerald-500',
-    warning: 'bg-amber-500',
-    critical: 'bg-red-500',
-  }
-
   return (
     <div>
-      {/* Connection status */}
-      <div
-        className={`mb-4 rounded-xl border px-4 py-2.5 text-sm ${connectionStyles[connectionTone]}`}
-      >
-        <button
-          onClick={() => setStatusExpanded((v) => !v)}
-          disabled={failedSources.length === 0}
-          className="flex w-full items-center gap-2 text-left disabled:cursor-default"
-        >
-          <span className={`h-2 w-2 shrink-0 rounded-full ${connectionDot[connectionTone]}`} />
-          <span className="font-medium">
-            {connectionTone === 'good'
-              ? t('conn.good', { ok: okCount, total: totalSources })
-              : t('conn.partial', { ok: okCount, total: totalSources })}
-          </span>
-          {failedSources.length > 0 && (
-            <ChevronDown
-              size={14}
-              className={`ml-auto shrink-0 transition-transform ${statusExpanded ? 'rotate-180' : ''}`}
-            />
-          )}
-        </button>
-        {statusExpanded && failedSources.length > 0 && (
-          <ul className="mt-2 space-y-1 border-t border-current/20 pt-2">
-            {failedSources.map((s) => (
-              <li key={s.system} className="flex items-center gap-1.5 text-xs">
-                <AlertTriangle size={12} className="shrink-0" />
-                {s.system}: {t('conn.failed')}
-                {s.error ? ` (${s.error})` : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Tabs + KPI tile + refresh */}
+      {/* KPI tile + refresh */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-          <button
-            onClick={() => setTab('active')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-              tab === 'active' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <ListChecks size={14} />
-            {t('tab.active')}
-          </button>
-          <button
-            onClick={() => setTab('history')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-              tab === 'history' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <History size={14} />
-            {t('tab.history')}
-          </button>
-        </div>
-
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
           <p className="text-xs text-slate-500">{t('kpi.total')}</p>
           <p className="text-xl font-semibold text-slate-900">{stats.total}</p>
@@ -264,9 +207,21 @@ export default function IssueListView({ onLoggedOut }: { onLoggedOut: () => void
           {filtered.map((issue) => (
             <div key={`${issue.system}-${issue.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(issue.system)}`}>
-                  {issue.system}
-                </span>
+                {systemLink(issue) ? (
+                  <a
+                    href={systemLink(issue)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition hover:opacity-80 ${badgeClass(issue.system)}`}
+                  >
+                    {issue.system}
+                    <ExternalLink size={11} className="shrink-0" />
+                  </a>
+                ) : (
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass(issue.system)}`}>
+                    {issue.system}
+                  </span>
+                )}
                 <span className="text-xs text-slate-400">{formatTime(issue.createdAt, lang)}</span>
               </div>
               <p className="mb-2 whitespace-pre-wrap text-sm text-slate-800">{issue.description}</p>

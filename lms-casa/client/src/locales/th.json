@@ -44,7 +44,8 @@
     "sectionAdmin": "จัดการ",
     "sectionCommunity": "ชุมชน",
     "sectionWorkspace": "จัดการระบบ",
-    "sectionPersonal": "ส่วนตัว"
+    "sectionPersonal": "ส่วนตัว",
+    "reportIssue": "รายงานปัญหา"
   },
   "common": {
     "loading": "กำลังโหลด…",

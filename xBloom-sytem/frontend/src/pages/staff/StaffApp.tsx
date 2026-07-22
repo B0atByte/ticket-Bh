@@ -6,7 +6,7 @@ import { swalError, swalToast } from "../../lib/swal";
 import { Button, Logo, TextField } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import LangToggle from "../../components/LangToggle";
-import QuickAccessMenu from "../../components/QuickAccessMenu";
+import ReportBugDialog from "../../components/ReportBugButton";
 import Footer from "../../components/Footer";
 import CrmView from "./CrmView";
 import Today from "./tabs/Today";
@@ -52,6 +52,7 @@ export default function StaffApp() {
   const [term, setTerm] = useState("");
   const [query, setQuery] = useState("");
   const [view, setView] = useState("crm");
+  const [reportOpen, setReportOpen] = useState(false);
   // Techs have no CRM search; land them on their own cases instead.
   useEffect(() => {
     if (user?.role === "tech" && view === "crm") setView("cases");
@@ -110,6 +111,13 @@ export default function StaffApp() {
           {navItems.map((item) => (
             <NavItem key={item.key} item={item} side />
           ))}
+          <button
+            onClick={() => setReportOpen(true)}
+            className="flex w-full items-center gap-3 rounded-xl2 px-3 py-2.5 text-sm text-ink2 transition hover:bg-canvas"
+          >
+            <Icon name="alert" size={18} />
+            {t("bugReport.button")}
+          </button>
         </nav>
         <Footer className="border-t border-line p-3" />
       </aside>
@@ -126,7 +134,6 @@ export default function StaffApp() {
               </div>
             </form>
             <div className="ml-auto flex items-center gap-3">
-              <QuickAccessMenu />
               <LangToggle />
               <div className="hidden items-center gap-2 lg:flex">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl2 border border-line bg-brown-tint text-xs font-bold text-brand">{initials}</span>
@@ -156,6 +163,13 @@ export default function StaffApp() {
             {navItems.map((item) => (
               <NavItem key={item.key} item={item} />
             ))}
+            <button
+              onClick={() => setReportOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-3 py-2.5 text-sm text-muted transition"
+            >
+              <Icon name="alert" size={16} />
+              {t("bugReport.button")}
+            </button>
           </nav>
         </header>
 
@@ -170,24 +184,32 @@ export default function StaffApp() {
         </main>
         <Footer className="pb-6 md:hidden" />
       </div>
+
+      <ReportBugDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 }
+
+const DEV_ACCOUNTS = [
+  { label: "Admin", name: "Admin", pin: "0001" },
+  { label: "Staff", name: "Staff", pin: "0002" },
+  { label: "Tech", name: "Tech", pin: "0003" },
+];
 
 function StaffLogin({ onSignIn, onCancel, t }: { onSignIn: (n: string, p: string) => Promise<void>; onCancel: () => void; t: (k: string) => string }) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit() {
-    if (!name || !pin) {
+  async function submit(n = name, p = pin) {
+    if (!n || !p) {
       swalError(t("staff.signInFailed"), t("staff.enterNamePin"));
       return;
     }
     setBusy(true);
     try {
-      await onSignIn(name, pin);
-      swalToast("success", `${t("staff.signIn")} · ${name}`);
+      await onSignIn(n, p);
+      swalToast("success", `${t("staff.signIn")} · ${n}`);
     } catch (e) {
       swalError(t("staff.signInFailed"), e instanceof Error ? e.message : "");
     } finally {
@@ -211,12 +233,32 @@ function StaffLogin({ onSignIn, onCancel, t }: { onSignIn: (n: string, p: string
               <Button variant="secondary" className="flex-1" onClick={onCancel}>
                 {t("common.cancel")}
               </Button>
-              <Button variant="brand" className="flex-1" onClick={submit} disabled={busy}>
+              <Button variant="brand" className="flex-1" onClick={() => submit()} disabled={busy}>
                 {busy ? t("staff.signingIn") : t("staff.signIn")}
               </Button>
             </div>
           </div>
         </div>
+
+        {import.meta.env.DEV && (
+          <div className="mt-4 rounded-xl2 border border-dashed border-amber-400/60 bg-amber-50/40 p-3 dark:bg-amber-950/20">
+            <p className="mb-2 text-[11px] font-semibold text-amber-900 dark:text-amber-200">DEV — Quick Access</p>
+            <div className="flex gap-1.5">
+              {DEV_ACCOUNTS.map((account) => (
+                <button
+                  key={account.name}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submit(account.name, account.pin)}
+                  className="flex-1 rounded-lg border border-line bg-card px-2 py-1.5 text-xs font-medium transition-colors hover:border-brand hover:bg-brand/5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {account.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Footer className="mt-6" />
       </div>
     </div>

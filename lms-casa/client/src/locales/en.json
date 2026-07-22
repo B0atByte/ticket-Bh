@@ -44,7 +44,8 @@
     "sectionAdmin": "Administration",
     "sectionCommunity": "Community",
     "sectionWorkspace": "Workspace",
-    "sectionPersonal": "Personal"
+    "sectionPersonal": "Personal",
+    "reportIssue": "Report an issue"
   },
   "common": {
     "loading": "Loading…",

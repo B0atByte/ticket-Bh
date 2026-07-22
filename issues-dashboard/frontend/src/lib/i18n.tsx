@@ -19,12 +19,10 @@ const DICT: Record<string, Entry> = {
 
   'conn.good': { th: 'เชื่อมต่อปกติ {ok}/{total} ระบบ', en: 'Connected {ok}/{total} systems' },
   'conn.partial': { th: 'เชื่อมต่อได้บางส่วน {ok}/{total} ระบบ', en: 'Partially connected {ok}/{total} systems' },
-  'conn.failed': { th: 'ดึงข้อมูลไม่สำเร็จ', en: 'failed to fetch' },
 
   'maintab.issues': { th: 'รายการแจ้งปัญหา', en: 'Issue List' },
   'maintab.analytics': { th: 'แดชบอร์ดภาพรวม', en: 'Analytics Dashboard' },
 
-  'tab.active': { th: 'ใหม่ / กำลังดำเนินการ', en: 'New / In Progress' },
   'tab.history': { th: 'ประวัติ', en: 'History' },
 
   'kpi.total': { th: 'ทั้งหมด', en: 'Total' },

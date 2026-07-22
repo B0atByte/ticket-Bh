@@ -6,7 +6,6 @@ import { KitchenPage } from './pages/KitchenPage'
 import { AdminPage } from './pages/AdminPage'
 import { DriverPage } from './pages/DriverPage'
 import { BranchPage } from './pages/BranchPage'
-import { ReportButton } from './components/ReportButton'
 import { Loader2 } from 'lucide-react'
 
 function AppContent() {
@@ -37,7 +36,6 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <AppContent />
-          <ReportButton />
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
