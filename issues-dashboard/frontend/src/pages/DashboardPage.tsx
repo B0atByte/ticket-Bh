@@ -34,7 +34,7 @@ export default function DashboardPage({ onLoggedOut }: { onLoggedOut: () => void
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold text-slate-900">Issue Management</h1>
                 {totalSources > 0 && (
-                  <span className="text-xs text-slate-400">
+                  <span className={`text-xs font-medium ${okCount === totalSources ? 'text-slate-400' : 'text-red-600'}`}>
                     {okCount === totalSources
                       ? t('conn.good', { ok: okCount, total: totalSources })
                       : t('conn.partial', { ok: okCount, total: totalSources })}

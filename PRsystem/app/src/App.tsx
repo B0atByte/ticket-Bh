@@ -14,7 +14,7 @@ import {
   type User, type PurchaseRequest, type PurchaseItem, type AuditLog, type Role
 } from './data';
 import { api } from './lib/api';
-import { fetchMyIssues, getAttachmentDownloadUrl, submitIssueReport, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
+import { fetchMyIssues, getAttachmentDownloadUrl, postIssueComment, submitIssueReport, type Category, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
 import './index.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -768,6 +768,16 @@ const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
   { value: 'normal', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
 ];
 
+// Not to be confused with `CATEGORIES` from ./data (purchase-item categories)
+// — this is the unrelated issue-report category enum from issue-service.
+const ISSUE_CATEGORY_OPTIONS: { value: Category; label: string }[] = [
+  { value: 'system_error', label: 'ระบบขัดข้อง' },
+  { value: 'payment', label: 'การชำระเงินผิดพลาด' },
+  { value: 'account', label: 'บัญชีผู้ใช้' },
+  { value: 'feedback', label: 'ข้อเสนอแนะ' },
+  { value: 'other', label: 'อื่นๆ' },
+];
+
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → resolved). Issue Management shows its own
 // admin-facing wording for the same states — these are reporter-facing.
@@ -806,15 +816,23 @@ function IssueProgress({ status }: { status: IssueStatus }) {
 
 function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
+  const cat = ISSUE_CATEGORY_OPTIONS.find(c => c.value === issue.category);
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <p className="flex-1 line-clamp-2 text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
-        {sev && (
-          <span className="shrink-0 rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
-            {sev.label}
-          </span>
-        )}
+        <p className="flex-1 line-clamp-2 text-sm font-medium text-slate-800 dark:text-slate-100">{issue.subject || issue.description}</p>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {sev && (
+            <span className="rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+              {sev.label}
+            </span>
+          )}
+          {cat && (
+            <span className="rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+              {cat.label}
+            </span>
+          )}
+        </div>
       </div>
       <p className="mb-3 text-[11px] text-slate-400 dark:text-slate-500">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -833,7 +851,27 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
 
 function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
   const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
+  const cat = ISSUE_CATEGORY_OPTIONS.find(c => c.value === issue.category);
   const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
+  const [comments, setComments] = useState(issue.comments);
+  const [commentText, setCommentText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  const sendComment = async () => {
+    if (!commentText.trim()) return;
+    setSending(true);
+    setCommentError(null);
+    try {
+      const updated = await postIssueComment(issue.id, reporterId, commentText.trim());
+      setComments(updated);
+      setCommentText('');
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : 'ส่งข้อความไม่สำเร็จ');
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="space-y-3.5">
@@ -843,13 +881,25 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
         ย้อนกลับ
       </button>
 
-      {sev && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
-          {sev.label}
-        </span>
-      )}
+      <div className="flex flex-wrap gap-1.5">
+        {sev && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+            {sev.label}
+          </span>
+        )}
+        {cat && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+            {cat.label}
+          </span>
+        )}
+      </div>
 
+      {issue.subject && <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{issue.subject}</p>}
       <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">{issue.description}</p>
+
+      {issue.contactInfo && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">ติดต่อกลับ: {issue.contactInfo}</p>
+      )}
 
       <p className="text-[11px] text-slate-400 dark:text-slate-500">
         แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -877,6 +927,39 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+        <p className="mb-2 text-xs font-semibold text-slate-600 dark:text-slate-300">ความคิดเห็น</p>
+        <div className="space-y-2">
+          {comments.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500">ยังไม่มีความคิดเห็น</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2">
+                <div className="mb-0.5 flex items-center gap-1.5">
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${c.authorType === 'admin' ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}>
+                    {c.authorType === 'admin' ? 'แอดมิน' : 'ผู้แจ้ง'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                    {new Date(c.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">{c.message}</p>
+              </div>
+            ))
+          )}
+        </div>
+        {commentError && <p className="mt-2 text-xs text-red-500">{commentError}</p>}
+        <div className="mt-2 flex gap-2">
+          <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="พิมพ์ข้อความ..." rows={2}
+            className="flex-1 resize-none rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 py-2 text-sm outline-none focus:border-red-500/50" />
+          <button type="button" onClick={sendComment} disabled={sending || !commentText.trim()}
+            className="flex items-center gap-1 self-end rounded-lg bg-slate-900 dark:bg-slate-100 px-3 py-2 text-xs font-semibold text-white dark:text-slate-900 disabled:opacity-50">
+            {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            ส่ง
+          </button>
         </div>
       </div>
     </div>
@@ -4159,6 +4242,9 @@ export default function App() {
   const [editUserTarget, setEditUserTarget] = useState<User | null | undefined>(undefined);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportDesc, setReportDesc] = useState('');
+  const [reportSubject, setReportSubject] = useState('');
+  const [reportCategory, setReportCategory] = useState<Category>('other');
+  const [reportContactInfo, setReportContactInfo] = useState('');
   const [reportSeverity, setReportSeverity] = useState<Severity>('normal');
   const [reportAttachment, setReportAttachment] = useState<File | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
@@ -4375,11 +4461,17 @@ export default function App() {
         reporterRole: currentUser.role,
         page,
         attachment: reportAttachment,
+        category: reportCategory,
+        subject: reportSubject.trim() || undefined,
+        contactInfo: reportContactInfo.trim() || undefined,
       });
       toast('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
       setReportOpen(false);
       setReportView('new');
       setReportDesc('');
+      setReportSubject('');
+      setReportCategory('other');
+      setReportContactInfo('');
       setReportSeverity('normal');
       setReportAttachment(null);
     } catch (err: any) {
@@ -4454,10 +4546,10 @@ export default function App() {
       <PageLoader loading={isLoading} />
       <ToastContainer toasts={toasts} remove={id => setToasts(t => t.filter(x => x.id !== id))} />
 
-      <Modal open={reportOpen} title="รายงานปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); } }}
+      <Modal open={reportOpen} title="รายงานปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); setReportAttachment(null); } }}
         footer={reportView === 'new' ? (
           <div className="flex gap-2">
-            <button onClick={() => { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
+            <button onClick={() => { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
               className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
               ยกเลิก
             </button>
@@ -4491,6 +4583,13 @@ export default function App() {
 
         {reportView === 'new' ? (
           <>
+            <Sel label="หมวดหมู่" value={reportCategory} onChange={e => setReportCategory(e.target.value as Category)} disabled={reportSubmitting} className="mb-3">
+              {ISSUE_CATEGORY_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </Sel>
+            <Input value={reportSubject} onChange={e => setReportSubject(e.target.value)} disabled={reportSubmitting}
+              placeholder="หัวข้อสั้นๆ (ไม่บังคับ)" maxLength={120} className="mb-3" />
             <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">ระดับความเร่งด่วน</p>
             <div className="mb-3 grid grid-cols-3 gap-1.5">
               {SEVERITY_OPTIONS.map(opt => (
@@ -4505,7 +4604,9 @@ export default function App() {
               ))}
             </div>
             <Textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)} disabled={reportSubmitting}
-              placeholder="อธิบายปัญหาที่พบ..." rows={4} autoFocus />
+              placeholder="อธิบายปัญหาที่พบ..." rows={4} />
+            <Input value={reportContactInfo} onChange={e => setReportContactInfo(e.target.value)} disabled={reportSubmitting}
+              placeholder="เบอร์โทร/อีเมล ติดต่อกลับ (ไม่บังคับ)" className="mt-3" />
             <label className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
               <Upload size={14} className="shrink-0" />
               <span className="truncate">{reportAttachment ? reportAttachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>

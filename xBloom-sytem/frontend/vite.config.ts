@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, type Plugin } from "vite";
+import pkg from "./package.json";
 
 // Serve over HTTPS when a cert is present (mounted at ./certs). HTTPS makes the
 // page a secure context, which the LIVE camera scanner (getUserMedia) needs to
@@ -47,7 +48,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), buildId()],
-    define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
+    define: {
+      __BUILD_ID__: JSON.stringify(BUILD_ID),
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(pkg.version),
+    },
     server: {
       host: true,
       port: 5176,

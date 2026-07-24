@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Severity, Status } from '../constants.js'
+import type { Category, Severity, Status } from '../constants.js'
 import type { StoredAttachment } from '../lib/storage.js'
 import type { SystemName } from '../systems.js'
 
@@ -18,6 +18,11 @@ export interface Issue {
   reporterRole: string | null
   attachmentName: string | null // original filename, for display — null if no attachment
   attachmentMime: string | null
+  category: Category
+  subject: string
+  contactInfo: string | null
+  deviceInfo: string | null
+  appVersion: string | null
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +30,16 @@ export interface Issue {
 export interface StatusHistoryEntry {
   status: Status
   note: string | null
+  createdAt: string
+}
+
+export type CommentAuthorType = 'reporter' | 'admin'
+
+export interface CommentEntry {
+  id: number
+  authorType: CommentAuthorType
+  authorName: string
+  message: string
   createdAt: string
 }
 
@@ -37,6 +52,11 @@ export interface NewIssue {
   reporterName: string
   reporterRole?: string
   attachment?: StoredAttachment | null
+  category?: Category
+  subject?: string
+  contactInfo?: string
+  deviceInfo?: string
+  appVersion?: string
 }
 
 // Resolves to issue-service/data/issues.sqlite regardless of dev (tsx, src/db/)
@@ -76,12 +96,43 @@ function getDb(): DatabaseSync {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS issue_comments (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      issue_id    INTEGER NOT NULL REFERENCES issues(id),
+      author_type TEXT NOT NULL,
+      author_name TEXT NOT NULL,
+      message     TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_issues_created_at ON issues (created_at DESC)`)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_issues_source_system ON issues (source_system)`)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_issues_status ON issues (status)`)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_issues_reporter ON issues (source_system, reporter_id)`)
   db.exec(`CREATE INDEX IF NOT EXISTS idx_history_issue ON issue_status_history (issue_id)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_comments_issue ON issue_comments (issue_id)`)
+  migrateIssueColumns(db)
   return db
+}
+
+// No migration framework here — the CREATE TABLE above predates
+// category/subject/contact/device/app-version, so every column below is
+// added defensively via PRAGMA table_info + ALTER TABLE. Runs on every boot;
+// no-op once a column already exists (covers both fresh installs, where
+// CREATE TABLE just ran, and existing databases missing these columns).
+function migrateIssueColumns(db: DatabaseSync): void {
+  const existing = new Set((db.prepare(`PRAGMA table_info(issues)`).all() as { name: string }[]).map((c) => c.name))
+  const wanted: [string, string][] = [
+    ['category', `TEXT NOT NULL DEFAULT 'other'`],
+    ['subject', `TEXT NOT NULL DEFAULT ''`],
+    ['contact_info', `TEXT`],
+    ['device_info', `TEXT`],
+    ['app_version', `TEXT`],
+  ]
+  for (const [name, def] of wanted) {
+    if (!existing.has(name)) db.exec(`ALTER TABLE issues ADD COLUMN ${name} ${def}`)
+  }
 }
 
 export function initDb(): void {
@@ -92,6 +143,7 @@ const ISSUE_COLUMNS = `
   id, source_system AS system, description, page, severity, status,
   reporter_id AS reporterId, reporter_name AS reporterName, reporter_role AS reporterRole,
   attachment_name AS attachmentName, attachment_mime AS attachmentMime,
+  category, subject, contact_info AS contactInfo, device_info AS deviceInfo, app_version AS appVersion,
   created_at AS createdAt, updated_at AS updatedAt
 `
 
@@ -103,8 +155,8 @@ function rowToIssue(row: unknown): Issue {
 export function insertIssue(issue: NewIssue): Issue {
   const result = getDb()
     .prepare(
-      `INSERT INTO issues (source_system, description, page, severity, reporter_id, reporter_name, reporter_role, attachment_stored, attachment_name, attachment_mime)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO issues (source_system, description, page, severity, reporter_id, reporter_name, reporter_role, attachment_stored, attachment_name, attachment_mime, category, subject, contact_info, device_info, app_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       issue.system,
@@ -116,7 +168,12 @@ export function insertIssue(issue: NewIssue): Issue {
       issue.reporterRole ?? null,
       issue.attachment?.storedName ?? null,
       issue.attachment?.originalName ?? null,
-      issue.attachment?.mime ?? null
+      issue.attachment?.mime ?? null,
+      issue.category ?? 'other',
+      issue.subject ?? '',
+      issue.contactInfo ?? null,
+      issue.deviceInfo ?? null,
+      issue.appVersion ?? null
     )
 
   const id = Number(result.lastInsertRowid)
@@ -193,4 +250,24 @@ export function updateIssueStatus(id: number, status: Status, note: string | nul
   appendStatusHistory(id, status, note)
 
   return getIssueById(id)
+}
+
+export function getComments(issueId: number): CommentEntry[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT id, author_type AS authorType, author_name AS authorName, message, created_at AS createdAt
+       FROM issue_comments WHERE issue_id = ? ORDER BY created_at ASC, id ASC`
+    )
+    .all(issueId)
+  return rows.map((row) => {
+    const r = row as unknown as CommentEntry
+    return { ...r, id: Number(r.id) }
+  })
+}
+
+export function insertComment(issueId: number, authorType: CommentAuthorType, authorName: string, message: string): CommentEntry[] {
+  getDb()
+    .prepare(`INSERT INTO issue_comments (issue_id, author_type, author_name, message) VALUES (?, ?, ?, ?)`)
+    .run(issueId, authorType, authorName, message)
+  return getComments(issueId)
 }

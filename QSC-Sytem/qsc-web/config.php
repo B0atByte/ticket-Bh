@@ -25,3 +25,6 @@ define('DASHBOARD_API_KEY', getenv('DASHBOARD_API_KEY') ?: '');
 //  (แทนที่ report_issue.php เดิมของระบบนี้)
 // ===========================================================
 define('ISSUE_SERVICE_URL', getenv('ISSUE_SERVICE_URL') ?: 'http://localhost:4003');
+
+// ส่งแนบไปกับ "แจ้งปัญหา" เพื่อให้แอดมินรู้ว่าเจอปัญหาบนเวอร์ชันไหน
+define('APP_VERSION', '1.0.0');

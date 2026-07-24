@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Paperclip } from 'lucide-react';
+import { ArrowLeft, Loader2, Paperclip, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
@@ -10,18 +10,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { useAuthStore } from '../auth/auth.store';
 import { getApiErrorMessage } from '../../lib/api-error';
 import { toastSuccess } from '../../lib/confirm';
 import { alertWarning } from '../../lib/confirm';
-import { getAttachmentDownloadUrl, type IssueStatus, type MyIssue, type Severity } from '../../lib/issueService';
-import { createIssue, getMyIssues } from './issues.api';
+import { getAttachmentDownloadUrl, type Category, type IssueStatus, type MyIssue, type Severity } from '../../lib/issueService';
+import { addIssueComment, createIssue, getMyIssues } from './issues.api';
 
 const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
   { value: 'critical', label: 'ด่วนที่สุด', hint: 'ระบบพังถาวร ทำงานต่อไม่ได้เลย' },
   { value: 'high', label: 'ด่วน', hint: 'ทำงานได้บางส่วน แต่กระทบงานหลัก' },
   { value: 'normal', label: 'ทั่วไป', hint: 'ปัญหาทั่วไป/ข้อเสนอแนะ' },
+];
+
+const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
+  { value: 'system_error', label: 'ระบบขัดข้อง' },
+  { value: 'payment', label: 'การชำระเงินผิดพลาด' },
+  { value: 'account', label: 'บัญชีผู้ใช้' },
+  { value: 'feedback', label: 'ข้อเสนอแนะ' },
+  { value: 'other', label: 'อื่นๆ' },
 ];
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
@@ -66,16 +75,24 @@ function IssueProgress({ status }: { status: IssueStatus }) {
 
 function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
+  const cat = CATEGORY_OPTIONS.find((c) => c.value === issue.category);
 
   return (
     <div className="rounded-xl border border-border p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <p className="flex-1 line-clamp-2 text-sm text-foreground">{issue.description}</p>
-        {sev && (
-          <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {sev.label}
-          </span>
-        )}
+        <p className="flex-1 line-clamp-2 text-sm font-medium text-foreground">{issue.subject || issue.description}</p>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {sev && (
+            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {sev.label}
+            </span>
+          )}
+          {cat && (
+            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {cat.label}
+            </span>
+          )}
+        </div>
       </div>
       <p className="mb-3 text-[11px] text-muted-foreground">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -94,7 +111,27 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
 
 function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
+  const cat = CATEGORY_OPTIONS.find((c) => c.value === issue.category);
   const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
+  const [comments, setComments] = useState(issue.comments);
+  const [commentText, setCommentText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  async function sendComment() {
+    if (!commentText.trim()) return;
+    setSending(true);
+    setCommentError(null);
+    try {
+      const updated = await addIssueComment(issue.id, reporterId, commentText.trim());
+      setComments(updated);
+      setCommentText('');
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : 'ส่งข้อความไม่สำเร็จ');
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div className="space-y-3.5">
@@ -107,13 +144,23 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
         ย้อนกลับ
       </button>
 
-      {sev && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground">
-          {sev.label}
-        </span>
-      )}
+      <div className="flex flex-wrap gap-1.5">
+        {sev && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground">
+            {sev.label}
+          </span>
+        )}
+        {cat && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            {cat.label}
+          </span>
+        )}
+      </div>
 
+      {issue.subject && <p className="text-sm font-semibold text-foreground">{issue.subject}</p>}
       <p className="whitespace-pre-wrap text-sm text-foreground">{issue.description}</p>
+
+      {issue.contactInfo && <p className="text-xs text-muted-foreground">ติดต่อกลับ: {issue.contactInfo}</p>}
 
       <p className="text-[11px] text-muted-foreground">
         แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -147,6 +194,51 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
           ))}
         </div>
       </div>
+
+      <div className="border-t border-border pt-3">
+        <p className="mb-2 text-xs font-semibold text-foreground">ความคิดเห็น</p>
+        <div className="space-y-2">
+          {comments.length === 0 ? (
+            <p className="text-xs text-muted-foreground">ยังไม่มีความคิดเห็น</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="rounded-lg bg-accent px-3 py-2">
+                <div className="mb-0.5 flex items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      c.authorType === 'admin' ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {c.authorType === 'admin' ? 'แอดมิน' : 'ผู้แจ้ง'}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(c.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-foreground">{c.message}</p>
+              </div>
+            ))
+          )}
+        </div>
+        {commentError && <p className="mt-2 text-xs text-destructive">{commentError}</p>}
+        <div className="mt-2 flex gap-2">
+          <Textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="พิมพ์ข้อความ..."
+            rows={2}
+          />
+          <Button
+            variant="default"
+            onClick={sendComment}
+            disabled={sending || !commentText.trim()}
+            className="self-end"
+          >
+            {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            ส่ง
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -162,6 +254,9 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
   const [view, setView] = useState<'new' | 'history' | 'detail'>('new');
   const [selectedIssue, setSelectedIssue] = useState<MyIssue | null>(null);
   const [description, setDescription] = useState('');
+  const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState<Category>('other');
+  const [contactInfo, setContactInfo] = useState('');
   const [severity, setSeverity] = useState<Severity>('normal');
   const [attachment, setAttachment] = useState<File | null>(null);
   const [history, setHistory] = useState<MyIssue[]>([]);
@@ -198,11 +293,17 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
         reporterRole: user!.roles.join(', '),
         page: location.pathname,
         attachment,
+        category,
+        subject: subject.trim() || undefined,
+        contactInfo: contactInfo.trim() || undefined,
       }),
     onSuccess: async () => {
       onOpenChange(false);
       setView('new');
       setDescription('');
+      setSubject('');
+      setCategory('other');
+      setContactInfo('');
       setSeverity('normal');
       setAttachment(null);
       await toastSuccess('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
@@ -254,6 +355,28 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
 
         {view === 'new' ? (
           <>
+            <p className="-mb-2 text-xs font-medium text-muted-foreground">หมวดหมู่</p>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as Category)}
+              disabled={mutation.isPending}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <Input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              disabled={mutation.isPending}
+              placeholder="หัวข้อสั้นๆ (ไม่บังคับ)"
+              maxLength={120}
+            />
+
             <p className="-mb-2 text-xs font-medium text-muted-foreground">ระดับความเร่งด่วน</p>
             <div className="grid grid-cols-3 gap-1.5">
               {SEVERITY_OPTIONS.map((opt) => (
@@ -280,7 +403,13 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
               disabled={mutation.isPending}
               placeholder="อธิบายปัญหาที่พบ..."
               rows={4}
-              autoFocus
+            />
+
+            <Input
+              value={contactInfo}
+              onChange={(e) => setContactInfo(e.target.value)}
+              disabled={mutation.isPending}
+              placeholder="เบอร์โทร/อีเมล ติดต่อกลับ (ไม่บังคับ)"
             />
 
             <label className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent">

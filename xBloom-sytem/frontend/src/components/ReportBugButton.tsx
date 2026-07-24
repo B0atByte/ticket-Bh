@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import Modal from "./Modal";
-import { Button, FileField, TextArea } from "./ui";
+import { Button, FileField, SelectField, TextArea, TextField } from "./ui";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import {
   fetchMyIssues,
+  getAttachmentDownloadUrl,
+  postIssueComment,
   submitIssueReport,
+  type Category,
   type IssueStatus,
   type MyIssue,
   type Severity,
@@ -16,6 +19,7 @@ import { useI18n } from "../lib/i18n";
 import { swalToast } from "../lib/swal";
 
 const SEVERITIES: Severity[] = ["critical", "high", "normal"];
+const CATEGORIES: Category[] = ["system_error", "payment", "account", "feedback", "other"];
 
 // Positional 1:1 mapping of issue-service's real status lifecycle
 // (submitted → acknowledged → resolved).
@@ -48,14 +52,29 @@ function IssueProgress({ status, t }: { status: IssueStatus; t: (key: string) =>
   );
 }
 
-function IssueHistoryCard({ issue, lang, t }: { issue: MyIssue; lang: string; t: (key: string) => string }) {
+function IssueHistoryCard({
+  issue,
+  lang,
+  t,
+  onViewMore,
+}: {
+  issue: MyIssue;
+  lang: string;
+  t: (key: string) => string;
+  onViewMore: (issue: MyIssue) => void;
+}) {
   return (
     <div className="rounded-xl2 border border-line p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <p className="flex-1 line-clamp-2 text-sm text-ink">{issue.description}</p>
-        <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
-          {t(`bugReport.severity.${issue.severity}`)}
-        </span>
+        <p className="flex-1 line-clamp-2 text-sm font-medium text-ink">{issue.subject || issue.description}</p>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
+            {t(`bugReport.severity.${issue.severity}`)}
+          </span>
+          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
+            {t(`bugReport.category.${issue.category}`)}
+          </span>
+        </div>
       </div>
       <p className="mb-3 text-[11px] text-muted">
         {new Date(issue.createdAt).toLocaleString(lang === "th" ? "th-TH" : "en-US", {
@@ -64,6 +83,149 @@ function IssueHistoryCard({ issue, lang, t }: { issue: MyIssue; lang: string; t:
         })}
       </p>
       <IssueProgress status={issue.status} t={t} />
+      <button
+        type="button"
+        onClick={() => onViewMore(issue)}
+        className="mt-3 text-xs font-medium text-blue-600 hover:underline"
+      >
+        {t("bugReport.viewMore")}
+      </button>
+    </div>
+  );
+}
+
+function IssueDetail({
+  issue,
+  reporterId,
+  lang,
+  t,
+  onBack,
+}: {
+  issue: MyIssue;
+  reporterId: string;
+  lang: string;
+  t: (key: string) => string;
+  onBack: () => void;
+}) {
+  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
+  const [comments, setComments] = useState(issue.comments);
+  const [commentText, setCommentText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleString(lang === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" });
+
+  const sendComment = async () => {
+    if (!commentText.trim()) return;
+    setSending(true);
+    setCommentError(null);
+    try {
+      const updated = await postIssueComment(issue.id, reporterId, commentText.trim());
+      setComments(updated);
+      setCommentText("");
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : t("bugReport.commentFail"));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3.5">
+      <button type="button" onClick={onBack} className="flex items-center gap-1 text-xs font-medium text-muted hover:text-ink">
+        <Icon name="chevronLeft" size={14} />
+        {t("common.back")}
+      </button>
+
+      <div className="flex flex-wrap gap-1.5">
+        <span className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-ink">
+          {t(`bugReport.severity.${issue.severity}`)}
+        </span>
+        <span className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted">
+          {t(`bugReport.category.${issue.category}`)}
+        </span>
+      </div>
+
+      {issue.subject && <p className="text-sm font-semibold text-ink">{issue.subject}</p>}
+      <p className="whitespace-pre-wrap text-sm text-ink">{issue.description}</p>
+
+      {issue.contactInfo && (
+        <p className="text-xs text-muted">
+          {t("bugReport.contactPrefix")}
+          {issue.contactInfo}
+        </p>
+      )}
+
+      <p className="text-[11px] text-muted">
+        {t("bugReport.reportedAt")} {fmt(issue.createdAt)}
+      </p>
+
+      {attachmentUrl && (
+        <a
+          href={attachmentUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline"
+        >
+          <Icon name="file" size={12} />
+          {t("bugReport.viewAttachment")}
+        </a>
+      )}
+
+      <div className="border-t border-line pt-3">
+        <div className="space-y-3">
+          {issue.history.map((h, i) => (
+            <div key={i} className="flex gap-2.5">
+              <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${h.status === "resolved" ? "bg-green-500" : "bg-red"}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-ink">{t(`bugReport.status.${h.status}`)}</p>
+                {h.note && <p className="text-xs text-muted">{h.note}</p>}
+                <p className="text-[11px] text-muted">{fmt(h.createdAt)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-line pt-3">
+        <p className="mb-2 text-xs font-semibold text-ink">{t("bugReport.comments")}</p>
+        <div className="space-y-2">
+          {comments.length === 0 ? (
+            <p className="text-xs text-muted">{t("bugReport.noComments")}</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="rounded-lg bg-canvas px-3 py-2">
+                <div className="mb-0.5 flex items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      c.authorType === "admin" ? "bg-ink text-white" : "bg-line text-muted"
+                    }`}
+                  >
+                    {c.authorType === "admin" ? t("bugReport.authorAdmin") : t("bugReport.authorReporter")}
+                  </span>
+                  <span className="text-[11px] text-muted">{fmt(c.createdAt)}</span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-ink">{c.message}</p>
+              </div>
+            ))
+          )}
+        </div>
+        {commentError && <p className="mt-2 text-xs text-red">{commentError}</p>}
+        <div className="mt-2 flex gap-2">
+          <textarea
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder={t("bugReport.commentPlaceholder")}
+            rows={2}
+            className="flex-1 resize-none rounded-xl2 border border-line bg-white px-2.5 py-2 text-sm text-ink outline-none"
+          />
+          <Button variant="danger" onClick={sendComment} disabled={sending || !commentText.trim()} className="self-end">
+            <Icon name="send" size={12} />
+            {t("bugReport.commentSend")}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -77,8 +239,12 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
   const { user } = useAuth();
   const { t, lang } = useI18n();
   const location = useLocation();
-  const [view, setView] = useState<"new" | "history">("new");
+  const [view, setView] = useState<"new" | "history" | "detail">("new");
+  const [selectedIssue, setSelectedIssue] = useState<MyIssue | null>(null);
   const [description, setDescription] = useState("");
+  const [subject, setSubject] = useState("");
+  const [category, setCategory] = useState<Category>("other");
+  const [contactInfo, setContactInfo] = useState("");
   const [severity, setSeverity] = useState<Severity>("normal");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -113,6 +279,9 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
     onOpenChange(false);
     setView("new");
     setDescription("");
+    setSubject("");
+    setCategory("other");
+    setContactInfo("");
     setSeverity("normal");
     setAttachment(null);
   };
@@ -132,6 +301,9 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
         reporterRole: user.role,
         page: location.pathname,
         attachment,
+        category,
+        subject: subject.trim() || undefined,
+        contactInfo: contactInfo.trim() || undefined,
       });
       swalToast("success", t("bugReport.success"));
       close();
@@ -144,32 +316,58 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
 
   return (
       <Modal open={open} title={t("bugReport.title")} onClose={close}>
-        <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-xl2 bg-canvas p-1">
-          <button
-            type="button"
-            onClick={() => setView("new")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl2 py-1.5 text-xs font-medium transition-colors ${
-              view === "new" ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
-            }`}
-          >
-            <Icon name="tool" size={13} />
-            {t("bugReport.tab.new")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("history")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl2 py-1.5 text-xs font-medium transition-colors ${
-              view === "history" ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
-            }`}
-          >
-            <Icon name="clock" size={13} />
-            {t("bugReport.tab.history")}
-          </button>
-        </div>
+        {view !== "detail" && (
+          <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-xl2 bg-canvas p-1">
+            <button
+              type="button"
+              onClick={() => setView("new")}
+              className={`flex items-center justify-center gap-1.5 rounded-xl2 py-1.5 text-xs font-medium transition-colors ${
+                view === "new" ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              <Icon name="tool" size={13} />
+              {t("bugReport.tab.new")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("history")}
+              className={`flex items-center justify-center gap-1.5 rounded-xl2 py-1.5 text-xs font-medium transition-colors ${
+                view === "history" ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              <Icon name="clock" size={13} />
+              {t("bugReport.tab.history")}
+            </button>
+          </div>
+        )}
 
         {view === "new" ? (
           <>
-            <p className="mb-1.5 text-xs font-medium text-muted">{t("bugReport.severity")}</p>
+            <SelectField
+              label={t("bugReport.category")}
+              value={category}
+              onChange={(e) => setCategory(e.target.value as Category)}
+              disabled={submitting}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {t(`bugReport.category.${c}`)}
+                </option>
+              ))}
+            </SelectField>
+
+            <div className="mt-3">
+              <TextField
+                label=""
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                disabled={submitting}
+                placeholder={t("bugReport.subject")}
+                maxLength={120}
+              />
+            </div>
+
+            <p className="mb-1.5 mt-3 text-xs font-medium text-muted">{t("bugReport.severity")}</p>
             <div className="mb-3 grid grid-cols-3 gap-1.5">
               {SEVERITIES.map((s) => (
                 <button
@@ -194,8 +392,17 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
               disabled={submitting}
               placeholder={t("bugReport.placeholder")}
               rows={4}
-              autoFocus
             />
+
+            <div className="mt-3">
+              <TextField
+                label=""
+                value={contactInfo}
+                onChange={(e) => setContactInfo(e.target.value)}
+                disabled={submitting}
+                placeholder={t("bugReport.contactInfo")}
+              />
+            </div>
 
             <div className="mt-3">
               <FileField
@@ -216,7 +423,7 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
               </Button>
             </div>
           </>
-        ) : (
+        ) : view === "history" ? (
           <div className="max-h-[60vh] space-y-2.5 overflow-y-auto">
             {historyLoading ? (
               <div className="flex items-center justify-center py-10 text-muted">
@@ -227,9 +434,30 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
             ) : history.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted">{t("bugReport.history.empty")}</p>
             ) : (
-              history.map((issue) => <IssueHistoryCard key={issue.id} issue={issue} lang={lang} t={t} />)
+              history.map((issue) => (
+                <IssueHistoryCard
+                  key={issue.id}
+                  issue={issue}
+                  lang={lang}
+                  t={t}
+                  onViewMore={(i) => {
+                    setSelectedIssue(i);
+                    setView("detail");
+                  }}
+                />
+              ))
             )}
           </div>
+        ) : (
+          selectedIssue && (
+            <IssueDetail
+              issue={selectedIssue}
+              reporterId={user.name}
+              lang={lang}
+              t={t}
+              onBack={() => setView("history")}
+            />
+          )
         )}
       </Modal>
   );

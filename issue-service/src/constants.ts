@@ -24,3 +24,17 @@ export const STATUS_META: Record<Status, { label: string }> = {
   acknowledged: { label: 'รับเรื่องแล้ว' },
   resolved: { label: 'แก้ไขเสร็จสิ้น' },
 }
+
+// Reporter picks this on the form too — lets admins triage/route by type
+// without reading every description. "other" is the catch-all/default for
+// issues submitted before this field existed.
+export const CATEGORIES = ['system_error', 'payment', 'account', 'feedback', 'other'] as const
+export type Category = (typeof CATEGORIES)[number]
+
+export const CATEGORY_META: Record<Category, { label: string }> = {
+  system_error: { label: 'ระบบขัดข้อง' },
+  payment: { label: 'การชำระเงินผิดพลาด' },
+  account: { label: 'บัญชีผู้ใช้' },
+  feedback: { label: 'ข้อเสนอแนะ' },
+  other: { label: 'อื่นๆ' },
+}

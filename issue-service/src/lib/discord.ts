@@ -4,6 +4,7 @@ import { discordWebhookFor, type SystemName } from '../systems.js'
 export async function notifyDiscord(issue: {
   system: SystemName
   description: string
+  subject?: string | null
   page: string | null
   severity: Severity
   reporterName: string
@@ -14,6 +15,7 @@ export async function notifyDiscord(issue: {
   if (!webhookUrl) return // unconfigured for this system → skip silently, same as every existing system's own endpoint
 
   const meta = SEVERITY_META[issue.severity]
+  const titleSuffix = issue.subject ? `: ${issue.subject}` : ''
 
   try {
     await fetch(webhookUrl, {
@@ -23,7 +25,7 @@ export async function notifyDiscord(issue: {
         username: issue.system,
         embeds: [
           {
-            title: `แจ้งปัญหาใหม่ (${meta.label}) - ${issue.system}`,
+            title: `แจ้งปัญหาใหม่ (${meta.label}) - ${issue.system}${titleSuffix}`,
             description: issue.description,
             color: meta.color,
             fields: [

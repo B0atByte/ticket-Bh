@@ -1,14 +1,17 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { STATUS_META, SEVERITIES, STATUSES, type Status } from '../constants.js'
+import { CATEGORIES, CATEGORY_META, STATUS_META, SEVERITIES, STATUSES, type Status } from '../constants.js'
 import {
   getAttachmentInfo,
+  getComments,
   getIssueById,
   getStatusHistory,
+  insertComment,
   insertIssue,
   listIssues,
   listMyIssues,
   updateIssueStatus,
+  type CommentEntry,
   type Issue,
   type StatusHistoryEntry,
 } from '../db/client.js'
@@ -39,6 +42,12 @@ function serializeIssue(issue: Issue) {
     reporterRole: issue.reporterRole,
     hasAttachment: issue.attachmentName !== null,
     attachmentUrl: issue.attachmentName ? `/api/issues/${issue.id}/attachment` : null,
+    category: issue.category,
+    categoryLabel: CATEGORY_META[issue.category].label,
+    subject: issue.subject,
+    contactInfo: issue.contactInfo,
+    deviceInfo: issue.deviceInfo,
+    appVersion: issue.appVersion,
     createdAt: toUtcIso(issue.createdAt),
     updatedAt: toUtcIso(issue.updatedAt),
   }
@@ -50,6 +59,16 @@ function serializeHistory(entries: StatusHistoryEntry[]) {
     label: STATUS_META[h.status].label,
     note: h.note,
     createdAt: toUtcIso(h.createdAt),
+  }))
+}
+
+function serializeComments(entries: CommentEntry[]) {
+  return entries.map((c) => ({
+    id: String(c.id),
+    authorType: c.authorType,
+    authorName: c.authorName,
+    message: c.message,
+    createdAt: toUtcIso(c.createdAt),
   }))
 }
 
@@ -66,6 +85,15 @@ const createIssueSchema = z.object({
   reporterId: z.string().min(1, 'reporterId จำเป็นต้องส่งมา (ผู้แจ้งต้อง login ก่อน)').max(200),
   reporterName: z.string().min(1, 'reporterName จำเป็นต้องส่งมา').max(200),
   reporterRole: z.string().max(100).optional(),
+  category: z.enum(CATEGORIES, { errorMap: () => ({ message: `category ต้องเป็นหนึ่งใน: ${CATEGORIES.join(', ')}` }) })
+    .optional()
+    .default('other'),
+  subject: z.string().max(200).optional(),
+  contactInfo: z.string().max(200).optional(),
+  // Raw client-side blob (userAgent/screen/lang) — capped generously since
+  // this is diagnostic metadata, not something users edit or validate against.
+  deviceInfo: z.string().max(1000).optional(),
+  appVersion: z.string().max(100).optional(),
 })
 
 // POST /  — every system's report-issue form posts here (multipart/form-data
@@ -94,12 +122,28 @@ issueRoutes.post('/', async (c) => {
     storedAttachment = result.value
   }
 
-  const { system, description, page, severity, reporterId, reporterName, reporterRole } = parsed.data
-  const issue = insertIssue({ system, description, page, severity, reporterId, reporterName, reporterRole, attachment: storedAttachment })
+  const { system, description, page, severity, reporterId, reporterName, reporterRole, category, subject, contactInfo, deviceInfo, appVersion } =
+    parsed.data
+  const issue = insertIssue({
+    system,
+    description,
+    page,
+    severity,
+    reporterId,
+    reporterName,
+    reporterRole,
+    attachment: storedAttachment,
+    category,
+    subject,
+    contactInfo,
+    deviceInfo,
+    appVersion,
+  })
 
   await notifyDiscord({
     system,
     description,
+    subject: subject ?? null,
     page: page ?? null,
     severity,
     reporterName,
@@ -150,12 +194,13 @@ issueRoutes.get('/mine', (c) => {
   const issues = rows.map((issue) => ({
     ...serializeIssue(issue),
     history: serializeHistory(getStatusHistory(issue.id)),
+    comments: serializeComments(getComments(issue.id)),
   }))
 
   return c.json({ issues })
 })
 
-// GET /:id  — admin detail view (full status timeline included).
+// GET /:id  — admin detail view (full status timeline + comment thread included).
 issueRoutes.get('/:id', requireDashboardKey, (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isInteger(id)) return c.json({ error: 'invalid id' }, 400)
@@ -163,7 +208,11 @@ issueRoutes.get('/:id', requireDashboardKey, (c) => {
   const issue = getIssueById(id)
   if (!issue) return c.json({ error: 'not found' }, 404)
 
-  return c.json({ ...serializeIssue(issue), history: serializeHistory(getStatusHistory(id)) })
+  return c.json({
+    ...serializeIssue(issue),
+    history: serializeHistory(getStatusHistory(id)),
+    comments: serializeComments(getComments(id)),
+  })
 })
 
 const updateStatusSchema = z.object({
@@ -186,7 +235,53 @@ issueRoutes.patch('/:id/status', requireDashboardKey, async (c) => {
   const updated = updateIssueStatus(id, parsed.data.status, parsed.data.note ?? null)
   if (!updated) return c.json({ error: 'not found' }, 404)
 
-  return c.json({ ...serializeIssue(updated), history: serializeHistory(getStatusHistory(id)) })
+  return c.json({
+    ...serializeIssue(updated),
+    history: serializeHistory(getStatusHistory(id)),
+    comments: serializeComments(getComments(id)),
+  })
+})
+
+const createCommentSchema = z.object({
+  message: z.string().min(1, 'กรุณาพิมพ์ข้อความ').max(2000),
+  // Only meaningful for the reporter path — ignored when X-Dashboard-Key is
+  // valid. Same soft-trust tier as GET /mine: whoever knows system+reporterId
+  // for this issue can post as its reporter.
+  system: z.string().optional(),
+  reporterId: z.string().optional(),
+})
+
+// POST /:id/comments  — two-way thread on a ticket, separate from the
+// status-change "note" (that's an annotation on a lifecycle event; this is a
+// free-standing conversation). Admin posts via X-Dashboard-Key; the reporter
+// posts by proving they know their own system+reporterId, same tier as
+// GET /mine and the attachment endpoint. authorName is never taken from the
+// request — it's always derived server-side (the issue's own reporterName,
+// or a fixed admin label) so it can't be spoofed.
+issueRoutes.post('/:id/comments', async (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isInteger(id)) return c.json({ error: 'invalid id' }, 400)
+
+  const issue = getIssueById(id)
+  if (!issue) return c.json({ error: 'not found' }, 404)
+
+  const body = await c.req.json().catch(() => null)
+  const parsed = createCommentSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? 'ข้อมูลไม่ถูกต้อง' }, 400)
+  }
+
+  const isDashboard = c.req.header('X-Dashboard-Key') === process.env.DASHBOARD_API_KEY && !!process.env.DASHBOARD_API_KEY
+  const isOwner = parsed.data.system === issue.system && parsed.data.reporterId === issue.reporterId
+  if (!isDashboard && !isOwner) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const comments = isDashboard
+    ? insertComment(id, 'admin', 'ทีมงาน (Admin)', parsed.data.message)
+    : insertComment(id, 'reporter', issue.reporterName, parsed.data.message)
+
+  return c.json({ comments: serializeComments(comments) }, 201)
 })
 
 // GET /:id/attachment  — serves the uploaded screenshot/file. Two ways in:

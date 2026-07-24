@@ -41,6 +41,7 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
   const [issues, setIssues] = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [serviceDown, setServiceDown] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -48,7 +49,9 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
     setError(null)
     fetchAllIssues()
       .then((data) => {
-        if (!cancelled) setIssues(data.issues)
+        if (cancelled) return
+        setIssues(data.issues)
+        setServiceDown(data.sources.some((s) => !s.ok))
       })
       .catch((err) => {
         if (cancelled) return
@@ -56,6 +59,7 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
           onLoggedOut()
           return
         }
+        setServiceDown(false)
         setError(err instanceof Error ? err.message : t('list.loadFail'))
       })
       .finally(() => {
@@ -135,6 +139,10 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
 
       {loading && issues.length === 0 ? (
         <p className="text-sm text-slate-500">{t('analytics.loading')}</p>
+      ) : serviceDown ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {t('list.serviceDown')}
+        </p>
       ) : (
         <div className="space-y-4" style={{ opacity: loading ? 0.6 : 1 }}>
           {/* KPI row */}

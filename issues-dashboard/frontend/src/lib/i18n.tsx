@@ -56,6 +56,10 @@ const DICT: Record<string, Entry> = {
   'list.loading': { th: 'กำลังโหลด...', en: 'Loading...' },
   'list.empty': { th: 'ไม่มีรายการแจ้งปัญหา', en: 'No issues' },
   'list.loadFail': { th: 'โหลดข้อมูลไม่สำเร็จ', en: 'Failed to load data' },
+  'list.serviceDown': {
+    th: 'ไม่สามารถโหลดข้อมูลได้ตอนนี้ — เชื่อมต่อ issue-service ไม่ได้ (ไม่ใช่ว่าไม่มีปัญหา)',
+    en: 'Unable to load data right now — cannot reach issue-service (this does not mean there are no issues)',
+  },
 
   'card.page': { th: 'หน้า: {page}', en: 'Page: {page}' },
   'card.reporter': { th: 'ผู้แจ้ง: ', en: 'Reporter: ' },
@@ -72,6 +76,37 @@ const DICT: Record<string, Entry> = {
   'severity.critical': { th: 'ด่วนที่สุด', en: 'Critical' },
   'severity.high': { th: 'ด่วน', en: 'High' },
   'severity.normal': { th: 'ทั่วไป', en: 'Normal' },
+
+  'filter.allCategories': { th: 'ทุกหมวดหมู่', en: 'All categories' },
+  'category.system_error': { th: 'ระบบขัดข้อง', en: 'System error' },
+  'category.payment': { th: 'การชำระเงินผิดพลาด', en: 'Payment issue' },
+  'category.account': { th: 'บัญชีผู้ใช้', en: 'Account' },
+  'category.feedback': { th: 'ข้อเสนอแนะ', en: 'Feedback' },
+  'category.other': { th: 'อื่นๆ', en: 'Other' },
+
+  'detail.subject': { th: 'หัวข้อ', en: 'Subject' },
+  'detail.category': { th: 'หมวดหมู่', en: 'Category' },
+  'detail.contact': { th: 'ช่องทางติดต่อกลับ', en: 'Contact info' },
+  'detail.device': { th: 'อุปกรณ์ / เบราว์เซอร์', en: 'Device / browser' },
+  'detail.appVersion': { th: 'เวอร์ชันแอป', en: 'App version' },
+  'detail.attachment': { th: 'ไฟล์แนบ', en: 'Attachment' },
+  'detail.viewAttachment': { th: 'ดูไฟล์แนบ', en: 'View attachment' },
+  'detail.timeline': { th: 'ไทม์ไลน์', en: 'Timeline' },
+  'detail.updateStatus': { th: 'อัปเดตสถานะ', en: 'Update status' },
+  'detail.noteLabel': { th: 'หมายเหตุถึงผู้แจ้ง (ไม่บังคับ)', en: "Note to reporter (optional)" },
+  'detail.notePlaceholder': { th: 'อธิบายว่าแก้ไขอย่างไร หรือเกิดจากอะไร...', en: 'Explain what was fixed or what happened...' },
+  'detail.save': { th: 'บันทึก', en: 'Save' },
+  'detail.saving': { th: 'กำลังบันทึก...', en: 'Saving...' },
+  'detail.close': { th: 'ปิด', en: 'Close' },
+  'detail.comments': { th: 'ความคิดเห็น', en: 'Comments' },
+  'detail.noComments': { th: 'ยังไม่มีความคิดเห็น', en: 'No comments yet' },
+  'detail.commentPlaceholder': { th: 'พิมพ์ข้อความ...', en: 'Type a message...' },
+  'detail.send': { th: 'ส่ง', en: 'Send' },
+  'detail.commentFail': { th: 'ส่งความคิดเห็นไม่สำเร็จ', en: 'Failed to send comment' },
+  'detail.statusUpdateFail': { th: 'อัปเดตสถานะไม่สำเร็จ', en: 'Failed to update status' },
+  'detail.loadFail': { th: 'โหลดรายละเอียดไม่สำเร็จ', en: 'Failed to load detail' },
+  'detail.authorReporter': { th: 'ผู้แจ้ง', en: 'Reporter' },
+  'detail.authorAdmin': { th: 'แอดมิน', en: 'Admin' },
 }
 
 interface I18n {

@@ -1,3 +1,5 @@
+import { alertIssueServiceDown, alertIssueServiceSlow, clearOpsAlertState, OPS_SLOW_THRESHOLD_MS } from './discordAlert.js'
+
 // Single source now: the central issue-service (see issue-service's README
 // "Frontend wiring checklist" — its GET /api/issues was built specifically
 // for this dashboard to pull from). Each of the 5 systems used to run its
@@ -14,6 +16,12 @@ export interface NormalizedIssue {
   statusLabel: string
   reporterName: string | null
   reporterRole: string | null
+  category: string
+  categoryLabel: string
+  subject: string
+  contactInfo: string | null
+  deviceInfo: string | null
+  appVersion: string | null
   createdAt: string
   updatedAt: string
 }
@@ -38,15 +46,24 @@ function env(name: string): string {
 export async function aggregateIssues(limit: number): Promise<AggregateResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const start = Date.now()
 
   try {
     const res = await fetch(`${env('ISSUE_SERVICE_URL')}/api/issues?limit=${limit}`, {
       headers: { 'X-Dashboard-Key': env('ISSUE_SERVICE_DASHBOARD_KEY') },
       signal: controller.signal,
     })
+    const latencyMs = Date.now() - start
 
     if (!res.ok) {
+      alertIssueServiceDown(`HTTP ${res.status}`)
       return { issues: [], sources: [{ system: 'issue-service', ok: false, error: `HTTP ${res.status}` }] }
+    }
+
+    if (latencyMs > OPS_SLOW_THRESHOLD_MS) {
+      alertIssueServiceSlow(latencyMs)
+    } else {
+      clearOpsAlertState()
     }
 
     const body = (await res.json()) as { issues?: unknown[] }
@@ -64,6 +81,12 @@ export async function aggregateIssues(limit: number): Promise<AggregateResult> {
         statusLabel: String(i.statusLabel ?? ''),
         reporterName: (i.reporterName as string) ?? null,
         reporterRole: (i.reporterRole as string) ?? null,
+        category: String(i.category ?? 'other'),
+        categoryLabel: String(i.categoryLabel ?? ''),
+        subject: String(i.subject ?? ''),
+        contactInfo: (i.contactInfo as string) ?? null,
+        deviceInfo: (i.deviceInfo as string) ?? null,
+        appVersion: (i.appVersion as string) ?? null,
         createdAt: String(i.createdAt),
         updatedAt: String(i.updatedAt ?? i.createdAt),
       }
@@ -71,9 +94,11 @@ export async function aggregateIssues(limit: number): Promise<AggregateResult> {
 
     return { issues, sources: [{ system: 'issue-service', ok: true }] }
   } catch (err) {
+    const message = err instanceof Error ? err.message : 'fetch failed'
+    alertIssueServiceDown(message)
     return {
       issues: [],
-      sources: [{ system: 'issue-service', ok: false, error: err instanceof Error ? err.message : 'fetch failed' }],
+      sources: [{ system: 'issue-service', ok: false, error: message }],
     }
   } finally {
     clearTimeout(timeout)
