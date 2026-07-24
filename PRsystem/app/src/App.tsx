@@ -816,23 +816,15 @@ function IssueProgress({ status }: { status: IssueStatus }) {
 
 function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
-  const cat = ISSUE_CATEGORY_OPTIONS.find(c => c.value === issue.category);
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm font-medium text-slate-800 dark:text-slate-100">{issue.subject || issue.description}</p>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {sev && (
-            <span className="rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
-              {sev.label}
-            </span>
-          )}
-          {cat && (
-            <span className="rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">
-              {cat.label}
-            </span>
-          )}
-        </div>
+        {sev && (
+          <span className="shrink-0 rounded-full border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">
+            {sev.label}
+          </span>
+        )}
       </div>
       <p className="mb-3 text-[11px] text-slate-400 dark:text-slate-500">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -4246,7 +4238,6 @@ export default function App() {
   const [reportCategory, setReportCategory] = useState<Category>('other');
   const [reportContactInfo, setReportContactInfo] = useState('');
   const [reportSeverity, setReportSeverity] = useState<Severity>('normal');
-  const [reportAttachment, setReportAttachment] = useState<File | null>(null);
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportView, setReportView] = useState<'new' | 'history' | 'detail'>('new');
   const [reportSelectedIssue, setReportSelectedIssue] = useState<MyIssue | null>(null);
@@ -4447,6 +4438,10 @@ export default function App() {
   }, [reportOpen, reportView, currentUser?.id]);
 
   const handleReportIssue = async () => {
+    if (reportSubject.trim().length === 0) {
+      toast('กรุณาใส่หัวข้อ', 'error');
+      return;
+    }
     if (reportDesc.trim().length < 5) {
       toast('กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร', 'error');
       return;
@@ -4460,9 +4455,8 @@ export default function App() {
         reporterName: currentUser.name,
         reporterRole: currentUser.role,
         page,
-        attachment: reportAttachment,
         category: reportCategory,
-        subject: reportSubject.trim() || undefined,
+        subject: reportSubject.trim(),
         contactInfo: reportContactInfo.trim() || undefined,
       });
       toast('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
@@ -4473,7 +4467,6 @@ export default function App() {
       setReportCategory('other');
       setReportContactInfo('');
       setReportSeverity('normal');
-      setReportAttachment(null);
     } catch (err: any) {
       toast(err.message || 'ส่งแจ้งปัญหาไม่สำเร็จ กรุณาลองใหม่', 'error');
     } finally {
@@ -4546,10 +4539,10 @@ export default function App() {
       <PageLoader loading={isLoading} />
       <ToastContainer toasts={toasts} remove={id => setToasts(t => t.filter(x => x.id !== id))} />
 
-      <Modal open={reportOpen} title="รายงานปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); setReportAttachment(null); } }}
+      <Modal open={reportOpen} title="รายงานปัญหา" onClose={() => { if (!reportSubmitting) { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); } }}
         footer={reportView === 'new' ? (
           <div className="flex gap-2">
-            <button onClick={() => { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); setReportAttachment(null); }} disabled={reportSubmitting}
+            <button onClick={() => { setReportOpen(false); setReportView('new'); setReportDesc(''); setReportSubject(''); setReportCategory('other'); setReportContactInfo(''); setReportSeverity('normal'); }} disabled={reportSubmitting}
               className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors">
               ยกเลิก
             </button>
@@ -4589,7 +4582,7 @@ export default function App() {
               ))}
             </Sel>
             <Input value={reportSubject} onChange={e => setReportSubject(e.target.value)} disabled={reportSubmitting}
-              placeholder="หัวข้อสั้นๆ (ไม่บังคับ)" maxLength={120} className="mb-3" />
+              placeholder="หัวข้อสั้นๆ" required maxLength={120} className="mb-3" />
             <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">ระดับความเร่งด่วน</p>
             <div className="mb-3 grid grid-cols-3 gap-1.5">
               {SEVERITY_OPTIONS.map(opt => (
@@ -4607,12 +4600,6 @@ export default function App() {
               placeholder="อธิบายปัญหาที่พบ..." rows={4} />
             <Input value={reportContactInfo} onChange={e => setReportContactInfo(e.target.value)} disabled={reportSubmitting}
               placeholder="เบอร์โทร/อีเมล ติดต่อกลับ (ไม่บังคับ)" className="mt-3" />
-            <label className="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-              <Upload size={14} className="shrink-0" />
-              <span className="truncate">{reportAttachment ? reportAttachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>
-              <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" disabled={reportSubmitting}
-                onChange={e => setReportAttachment(e.target.files?.[0] ?? null)} className="hidden" />
-            </label>
           </>
         ) : reportView === 'history' ? (
           <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">

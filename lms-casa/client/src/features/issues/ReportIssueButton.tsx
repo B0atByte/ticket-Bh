@@ -75,24 +75,16 @@ function IssueProgress({ status }: { status: IssueStatus }) {
 
 function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (issue: MyIssue) => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
-  const cat = CATEGORY_OPTIONS.find((c) => c.value === issue.category);
 
   return (
     <div className="rounded-xl border border-border p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm font-medium text-foreground">{issue.subject || issue.description}</p>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {sev && (
-            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {sev.label}
-            </span>
-          )}
-          {cat && (
-            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {cat.label}
-            </span>
-          )}
-        </div>
+        {sev && (
+          <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {sev.label}
+          </span>
+        )}
       </div>
       <p className="mb-3 text-[11px] text-muted-foreground">
         {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -258,7 +250,6 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
   const [category, setCategory] = useState<Category>('other');
   const [contactInfo, setContactInfo] = useState('');
   const [severity, setSeverity] = useState<Severity>('normal');
-  const [attachment, setAttachment] = useState<File | null>(null);
   const [history, setHistory] = useState<MyIssue[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -292,9 +283,8 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
         reporterName: `${user!.firstName} ${user!.lastName}`.trim(),
         reporterRole: user!.roles.join(', '),
         page: location.pathname,
-        attachment,
         category,
-        subject: subject.trim() || undefined,
+        subject: subject.trim(),
         contactInfo: contactInfo.trim() || undefined,
       }),
     onSuccess: async () => {
@@ -305,7 +295,6 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
       setCategory('other');
       setContactInfo('');
       setSeverity('normal');
-      setAttachment(null);
       await toastSuccess('ส่งแจ้งปัญหาเรียบร้อยแล้ว ขอบคุณครับ');
     },
     onError: async (err) => {
@@ -314,6 +303,10 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
   });
 
   const submit = () => {
+    if (subject.trim().length === 0) {
+      void alertWarning('รายงานปัญหา', 'กรุณาใส่หัวข้อ');
+      return;
+    }
     if (description.trim().length < 5) {
       void alertWarning('รายงานปัญหา', 'กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร');
       return;
@@ -373,7 +366,8 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               disabled={mutation.isPending}
-              placeholder="หัวข้อสั้นๆ (ไม่บังคับ)"
+              placeholder="หัวข้อสั้นๆ"
+              required
               maxLength={120}
             />
 
@@ -411,18 +405,6 @@ export function ReportIssueDialog({ open, onOpenChange }: Props) {
               disabled={mutation.isPending}
               placeholder="เบอร์โทร/อีเมล ติดต่อกลับ (ไม่บังคับ)"
             />
-
-            <label className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent">
-              <Paperclip size={14} className="shrink-0" />
-              <span className="truncate">{attachment ? attachment.name : 'แนบภาพหน้าจอ (ไม่บังคับ)'}</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
-                disabled={mutation.isPending}
-                onChange={(e) => setAttachment(e.target.files?.[0] ?? null)}
-                className="hidden"
-              />
-            </label>
 
             <DialogFooter>
               <Button

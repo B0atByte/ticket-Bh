@@ -7,9 +7,8 @@ export function createIssue(input: {
   reporterName: string;
   reporterRole?: string;
   page?: string;
-  attachment?: File | null;
   category: Category;
-  subject?: string;
+  subject: string;
   contactInfo?: string;
 }): Promise<{ id: string }> {
   return submitIssueReport(input);

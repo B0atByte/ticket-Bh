@@ -11,9 +11,8 @@ export interface SubmitIssueInput {
   reporterName: string;
   reporterRole?: string;
   page?: string;
-  attachment?: File | null;
   category: Category;
-  subject?: string;
+  subject: string;
   contactInfo?: string;
 }
 
@@ -36,9 +35,8 @@ export async function submitIssueReport(input: SubmitIssueInput): Promise<{ id: 
   fd.set("reporterName", input.reporterName);
   if (input.reporterRole) fd.set("reporterRole", input.reporterRole);
   if (input.page) fd.set("page", input.page);
-  if (input.attachment) fd.set("attachment", input.attachment);
   fd.set("category", input.category);
-  if (input.subject) fd.set("subject", input.subject);
+  fd.set("subject", input.subject);
   if (input.contactInfo) fd.set("contactInfo", input.contactInfo);
   fd.set("deviceInfo", captureDeviceInfo());
   const appVersion = import.meta.env.VITE_APP_VERSION as string | undefined;

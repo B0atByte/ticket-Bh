@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Icon } from "./Icon";
 import Modal from "./Modal";
-import { Button, FileField, SelectField, TextArea, TextField } from "./ui";
+import { Button, SelectField, TextArea, TextField } from "./ui";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import {
@@ -67,14 +67,9 @@ function IssueHistoryCard({
     <div className="rounded-xl2 border border-line p-3.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
         <p className="flex-1 line-clamp-2 text-sm font-medium text-ink">{issue.subject || issue.description}</p>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
-            {t(`bugReport.severity.${issue.severity}`)}
-          </span>
-          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
-            {t(`bugReport.category.${issue.category}`)}
-          </span>
-        </div>
+        <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-[10px] font-medium text-muted">
+          {t(`bugReport.severity.${issue.severity}`)}
+        </span>
       </div>
       <p className="mb-3 text-[11px] text-muted">
         {new Date(issue.createdAt).toLocaleString(lang === "th" ? "th-TH" : "en-US", {
@@ -246,7 +241,6 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
   const [category, setCategory] = useState<Category>("other");
   const [contactInfo, setContactInfo] = useState("");
   const [severity, setSeverity] = useState<Severity>("normal");
-  const [attachment, setAttachment] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<MyIssue[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -283,10 +277,13 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
     setCategory("other");
     setContactInfo("");
     setSeverity("normal");
-    setAttachment(null);
   };
 
   const submit = async () => {
+    if (subject.trim().length === 0) {
+      void swalToast("warning", t("bugReport.subjectRequired"));
+      return;
+    }
     if (description.trim().length < 5) {
       void swalToast("warning", t("bugReport.tooShort"));
       return;
@@ -300,9 +297,8 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
         reporterName: user.name,
         reporterRole: user.role,
         page: location.pathname,
-        attachment,
         category,
-        subject: subject.trim() || undefined,
+        subject: subject.trim(),
         contactInfo: contactInfo.trim() || undefined,
       });
       swalToast("success", t("bugReport.success"));
@@ -363,6 +359,7 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={submitting}
                 placeholder={t("bugReport.subject")}
+                required
                 maxLength={120}
               />
             </div>
@@ -401,16 +398,6 @@ export default function ReportBugDialog({ open, onOpenChange }: Props) {
                 onChange={(e) => setContactInfo(e.target.value)}
                 disabled={submitting}
                 placeholder={t("bugReport.contactInfo")}
-              />
-            </div>
-
-            <div className="mt-3">
-              <FileField
-                label=""
-                accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
-                fileName={attachment?.name}
-                hint={t("bugReport.attachment")}
-                onPick={setAttachment}
               />
             </div>
 

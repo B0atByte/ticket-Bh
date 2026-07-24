@@ -42,7 +42,7 @@ $u = current_user();
         <option value="other" selected>อื่นๆ</option>
       </select>
 
-      <input type="text" id="reportSubjectInput" maxlength="120" placeholder="หัวข้อสั้นๆ (ไม่บังคับ)"
+      <input type="text" id="reportSubjectInput" maxlength="120" placeholder="หัวข้อสั้นๆ" required
         class="mb-3 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-300 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition">
 
       <p class="mb-1.5 text-xs font-medium text-slate-500">ระดับความเร่งด่วน</p>
@@ -69,12 +69,6 @@ $u = current_user();
 
       <input type="text" id="reportContactInput" placeholder="เบอร์โทร/อีเมล ติดต่อกลับ (ไม่บังคับ)"
         class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-300 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition">
-
-      <label class="mt-3 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-xs text-slate-500 cursor-pointer hover:bg-slate-50">
-        <i data-lucide="paperclip" class="w-3.5 h-3.5 shrink-0" aria-hidden="true"></i>
-        <span id="reportAttachmentLabel" class="truncate">แนบภาพหน้าจอ (ไม่บังคับ)</span>
-        <input type="file" id="reportAttachmentInput" accept="image/png,image/jpeg,image/gif,image/webp,application/pdf" class="hidden">
-      </label>
 
       <div class="mt-4 flex gap-2">
         <button type="button" onclick="document.getElementById('reportIssueModal').classList.add('hidden')"
@@ -146,16 +140,12 @@ function issueProgressHtml(status) {
 
 function issueHistoryCardHtml(issue, index) {
   const label = REPORT_SEVERITY_LABEL[issue.severity] || issue.severity;
-  const catLabel = CATEGORY_LABELS[issue.category] || issue.category;
   const date = new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
   const heading = issue.subject ? escapeHtml(issue.subject) : escapeHtml(issue.description);
   return `<div class="rounded-xl border border-slate-200 p-3.5">
     <div class="mb-1.5 flex items-start justify-between gap-2">
       <p class="flex-1 line-clamp-2 text-sm font-medium text-slate-800">${heading}</p>
-      <div class="flex shrink-0 flex-col items-end gap-1">
-        <span class="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-500">${label}</span>
-        <span class="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-400">${catLabel}</span>
-      </div>
+      <span class="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-500">${label}</span>
     </div>
     <p class="mb-3 text-[11px] text-slate-400">${date}</p>
     ${issueProgressHtml(issue.status)}
@@ -314,14 +304,14 @@ function setReportSeverity(value) {
   });
 }
 
-document.getElementById('reportAttachmentInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  document.getElementById('reportAttachmentLabel').textContent = file ? file.name : 'แนบภาพหน้าจอ (ไม่บังคับ)';
-});
-
 async function submitReportIssue() {
   const el = document.getElementById('reportIssueText');
   const description = el.value.trim();
+  const subject = document.getElementById('reportSubjectInput').value.trim();
+  if (!subject) {
+    toast('กรุณาใส่หัวข้อ', 'alert-triangle');
+    return;
+  }
   if (description.length < 5) {
     toast('กรุณาอธิบายปัญหาอย่างน้อย 5 ตัวอักษร', 'alert-triangle');
     return;
@@ -338,14 +328,11 @@ async function submitReportIssue() {
     fd.set('reporterRole', CURRENT_USER.role);
     fd.set('page', location.pathname);
     fd.set('category', reportCategory);
-    const subject = document.getElementById('reportSubjectInput').value.trim();
-    if (subject) fd.set('subject', subject);
+    fd.set('subject', subject);
     const contactInfo = document.getElementById('reportContactInput').value.trim();
     if (contactInfo) fd.set('contactInfo', contactInfo);
     fd.set('deviceInfo', JSON.stringify({ ua: navigator.userAgent, screen: `${screen.width}x${screen.height}`, lang: navigator.language }));
     fd.set('appVersion', APP_VERSION);
-    const file = document.getElementById('reportAttachmentInput').files[0];
-    if (file) fd.set('attachment', file);
 
     const res = await fetch(`${ISSUE_SERVICE_URL}/api/issues`, { method: 'POST', body: fd });
     const d = await res.json();
@@ -356,8 +343,6 @@ async function submitReportIssue() {
     document.getElementById('reportContactInput').value = '';
     document.getElementById('reportCategorySelect').value = 'other';
     reportCategory = 'other';
-    document.getElementById('reportAttachmentInput').value = '';
-    document.getElementById('reportAttachmentLabel').textContent = 'แนบภาพหน้าจอ (ไม่บังคับ)';
     setReportSeverity('normal');
     switchReportView('new');
     document.getElementById('reportIssueModal').classList.add('hidden');

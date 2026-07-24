@@ -88,7 +88,7 @@ const createIssueSchema = z.object({
   category: z.enum(CATEGORIES, { errorMap: () => ({ message: `category ต้องเป็นหนึ่งใน: ${CATEGORIES.join(', ')}` }) })
     .optional()
     .default('other'),
-  subject: z.string().max(200).optional(),
+  subject: z.string().min(1, 'กรุณาใส่หัวข้อ').max(200),
   contactInfo: z.string().max(200).optional(),
   // Raw client-side blob (userAgent/screen/lang) — capped generously since
   // this is diagnostic metadata, not something users edit or validate against.
