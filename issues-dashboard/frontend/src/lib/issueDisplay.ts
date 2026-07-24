@@ -1,13 +1,5 @@
 import type { Issue, IssueStatusValue, Severity } from './api'
 
-export const SYSTEM_COLORS: Record<string, string> = {
-  Bhlogisticssystem: 'bg-blue-100 text-blue-800',
-  PRsystem: 'bg-purple-100 text-purple-800',
-  'lms-casa': 'bg-emerald-100 text-emerald-800',
-  xBloom: 'bg-pink-100 text-pink-800',
-  'QSC-Sytem': 'bg-amber-100 text-amber-800',
-}
-
 export const SYSTEM_URLS: Record<string, string> = {
   Bhlogisticssystem: 'http://localhost:5173',
   PRsystem: 'http://localhost:5174',
@@ -16,8 +8,9 @@ export const SYSTEM_URLS: Record<string, string> = {
   'QSC-Sytem': 'http://localhost:8083',
 }
 
-export function badgeClass(system: string): string {
-  return SYSTEM_COLORS[system] ?? 'bg-slate-100 text-slate-800'
+// Same outline style for every system now — no per-system fill color.
+export function badgeClass(_system: string): string {
+  return 'border border-sky-300 text-blue-600'
 }
 
 export function systemLink(issue: Pick<Issue, 'system' | 'page'>): string | null {
@@ -42,13 +35,13 @@ export const SEVERITY_KEYS: Record<Severity, string> = {
 
 export const SEVERITY_COLORS: Record<Severity, string> = {
   critical: 'bg-red-100 text-red-800',
-  high: 'bg-amber-100 text-amber-800',
-  normal: 'bg-slate-100 text-slate-800',
+  high: 'bg-orange-100 text-orange-800',
+  normal: 'bg-green-100 text-green-800',
 }
 
 // Categories are an open-ended-ish enum server-side (falls back to 'other'
-// for anything unrecognized) — key/color maps here mirror that with a
-// fallback branch rather than assuming every value has an entry.
+// for anything unrecognized) — key map mirrors that with a fallback branch
+// rather than assuming every value has an entry.
 export const CATEGORY_KEYS: Record<string, string> = {
   system_error: 'category.system_error',
   payment: 'category.payment',
@@ -57,20 +50,8 @@ export const CATEGORY_KEYS: Record<string, string> = {
   other: 'category.other',
 }
 
-export const CATEGORY_COLORS: Record<string, string> = {
-  system_error: 'bg-rose-100 text-rose-800',
-  payment: 'bg-indigo-100 text-indigo-800',
-  account: 'bg-cyan-100 text-cyan-800',
-  feedback: 'bg-lime-100 text-lime-800',
-  other: 'bg-slate-100 text-slate-800',
-}
-
 export function categoryKey(category: string): string {
   return CATEGORY_KEYS[category] ?? CATEGORY_KEYS.other
-}
-
-export function categoryColor(category: string): string {
-  return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.other
 }
 
 export function formatTime(iso: string, lang: string): string {

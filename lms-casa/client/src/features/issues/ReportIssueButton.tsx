@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Paperclip, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
@@ -16,7 +16,7 @@ import { useAuthStore } from '../auth/auth.store';
 import { getApiErrorMessage } from '../../lib/api-error';
 import { toastSuccess } from '../../lib/confirm';
 import { alertWarning } from '../../lib/confirm';
-import { getAttachmentDownloadUrl, type Category, type IssueStatus, type MyIssue, type Severity } from '../../lib/issueService';
+import { type Category, type IssueStatus, type MyIssue, type Severity } from '../../lib/issueService';
 import { addIssueComment, createIssue, getMyIssues } from './issues.api';
 
 const SEVERITY_OPTIONS: { value: Severity; label: string; hint: string }[] = [
@@ -104,7 +104,6 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
 function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity);
   const cat = CATEGORY_OPTIONS.find((c) => c.value === issue.category);
-  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
   const [comments, setComments] = useState(issue.comments);
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
@@ -157,18 +156,6 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
       <p className="text-[11px] text-muted-foreground">
         แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
       </p>
-
-      {attachmentUrl && (
-        <a
-          href={attachmentUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-        >
-          <Paperclip size={12} />
-          ดูไฟล์แนบ
-        </a>
-      )}
 
       <div className="border-t border-border pt-3">
         <div className="space-y-3">

@@ -1,13 +1,12 @@
-import { ExternalLink, Loader2, Paperclip, Send, X } from 'lucide-react'
+import { ExternalLink, Loader2, Send, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetchIssueDetail, openAttachment, postComment, updateIssueStatus, type IssueDetail, type IssueStatusValue } from '../lib/api'
+import { fetchIssueDetail, postComment, updateIssueStatus, type IssueDetail, type IssueStatusValue } from '../lib/api'
 import {
   ALL_STATUSES,
   SEVERITY_COLORS,
   SEVERITY_KEYS,
   STATUS_KEYS,
   badgeClass,
-  categoryColor,
   categoryKey,
   formatTime,
   systemLink,
@@ -136,9 +135,7 @@ export default function IssueDetailPanel({
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SEVERITY_COLORS[detail.severity]}`}>
                   {t(SEVERITY_KEYS[detail.severity])}
                 </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor(detail.category)}`}>
-                  {t(categoryKey(detail.category))}
-                </span>
+                <span className="text-xs font-medium text-slate-500">#{t(categoryKey(detail.category))}</span>
               </div>
 
               <div>
@@ -178,25 +175,6 @@ export default function IssueDetailPanel({
                   </div>
                 )}
               </dl>
-
-              {detail.hasAttachment && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    openAttachment(detail.id).catch((err) => {
-                      if (err instanceof Error && err.message === 'Unauthorized') {
-                        onLoggedOut()
-                        return
-                      }
-                      setError(err instanceof Error ? err.message : t('detail.loadFail'))
-                    })
-                  }
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline"
-                >
-                  <Paperclip size={12} />
-                  {t('detail.viewAttachment')}
-                </button>
-              )}
 
               <div className="rounded-xl border border-slate-200 p-3">
                 <p className="mb-2 text-xs font-semibold text-slate-700">{t('detail.updateStatus')}</p>

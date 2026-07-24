@@ -1,11 +1,16 @@
-import { BarChart3, TrendingUp } from 'lucide-react'
+import { BarChart3, FileText, Layers, TrendingUp } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchAllIssues, type Issue } from '../../lib/api'
 import { useI18n } from '../../lib/i18n'
+import { categoryKey } from '../../lib/issueDisplay'
+import CategoryBySystemChart, { type LegendEntry, type SystemCategoryRow } from './CategoryBySystemChart'
 import IssuesBySystemChart, { type SystemCount } from './IssuesBySystemChart'
-import { SYSTEM_ORDER } from './palette'
+import { CATEGORY_ORDER, SYSTEM_ORDER, categoryColor } from './palette'
 import StatTile from './StatTile'
+import TopPagesChart, { type PageCount } from './TopPagesChart'
 import TrendLineChart, { type DayCount } from './TrendLineChart'
+
+const TOP_PAGES_LIMIT = 8
 
 type Range = '7d' | '30d' | '90d' | 'all'
 const RANGE_DAYS: Record<Exclude<Range, 'all'>, number> = { '7d': 7, '30d': 30, '90d': 90 }
@@ -102,6 +107,43 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
     return Array.from(counts, ([system, count]) => ({ system, count })).sort((a, b) => b.count - a.count)
   }, [filtered])
 
+  // Which page/feature gets reported the most — points straight at the
+  // broken spot instead of just "which system." Issues without a page
+  // (nothing to point at) are excluded rather than bucketed as "unknown."
+  const topPages: PageCount[] = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const i of filtered) {
+      if (!i.page) continue
+      counts.set(i.page, (counts.get(i.page) ?? 0) + 1)
+    }
+    return Array.from(counts, ([page, count]) => ({ page, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, TOP_PAGES_LIMIT)
+  }, [filtered])
+
+  const categoryLegend: LegendEntry[] = useMemo(
+    () => CATEGORY_ORDER.map((c) => ({ key: c, label: t(categoryKey(c)), color: categoryColor(c) })),
+    [t]
+  )
+
+  const categoryBySystem: SystemCategoryRow[] = useMemo(() => {
+    const bySys = new Map<string, Map<string, number>>(SYSTEM_ORDER.map((s) => [s, new Map()]))
+    for (const i of filtered) {
+      const bySysCat = bySys.get(i.system)
+      if (!bySysCat) continue
+      bySysCat.set(i.category, (bySysCat.get(i.category) ?? 0) + 1)
+    }
+    return Array.from(bySys, ([system, catCounts]) => {
+      const segments = categoryLegend.map((entry) => ({
+        key: entry.key,
+        label: entry.label,
+        count: catCounts.get(entry.key) ?? 0,
+        color: entry.color,
+      }))
+      return { system, total: segments.reduce((sum, s) => sum + s.count, 0), segments }
+    }).sort((a, b) => b.total - a.total)
+  }, [filtered, categoryLegend])
+
   const trendDays = useMemo(() => {
     if (range !== 'all') return RANGE_DAYS[range]
     if (issues.length === 0) return 30
@@ -165,6 +207,32 @@ export default function AnalyticsView({ onLoggedOut }: { onLoggedOut: () => void
               <p className="py-6 text-center text-sm text-slate-400">{t('analytics.noData')}</p>
             ) : (
               <IssuesBySystemChart data={bySystem} />
+            )}
+          </div>
+
+          {/* Category breakdown by system */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <Layers size={16} className="text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-800">{t('analytics.categoryBySystem')}</h2>
+            </div>
+            {filtered.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400">{t('analytics.noData')}</p>
+            ) : (
+              <CategoryBySystemChart data={categoryBySystem} legend={categoryLegend} />
+            )}
+          </div>
+
+          {/* Top reported pages */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <FileText size={16} className="text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-800">{t('analytics.topPages')}</h2>
+            </div>
+            {topPages.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400">{t('analytics.noData')}</p>
+            ) : (
+              <TopPagesChart data={topPages} />
             )}
           </div>
 

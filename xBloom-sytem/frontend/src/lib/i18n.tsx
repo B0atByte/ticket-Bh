@@ -64,7 +64,6 @@ const DICT: Record<string, Entry> = {
   "bugReport.contactPrefix": { th: "ติดต่อกลับ: ", en: "Contact: " },
   "bugReport.viewMore": { th: "ดูเพิ่ม", en: "View more" },
   "bugReport.reportedAt": { th: "แจ้งเมื่อ", en: "Reported at" },
-  "bugReport.viewAttachment": { th: "ดูไฟล์แนบ", en: "View attachment" },
   "bugReport.comments": { th: "ความคิดเห็น", en: "Comments" },
   "bugReport.noComments": { th: "ยังไม่มีความคิดเห็น", en: "No comments yet" },
   "bugReport.commentPlaceholder": { th: "พิมพ์ข้อความ...", en: "Type a message..." },

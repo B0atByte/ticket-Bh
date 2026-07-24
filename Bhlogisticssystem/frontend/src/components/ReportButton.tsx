@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Bug, Loader2, Paperclip, Send, X } from 'lucide-react'
+import { ArrowLeft, Bug, Loader2, Send, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   fetchMyIssues,
-  getAttachmentDownloadUrl,
   postIssueComment,
   submitIssueReport,
   type Category,
@@ -100,7 +99,6 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
 function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
   const sev = SEVERITY_OPTIONS.find((s) => s.value === issue.severity)
   const cat = CATEGORY_OPTIONS.find((c) => c.value === issue.category)
-  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId)
   const [comments, setComments] = useState(issue.comments)
   const [commentText, setCommentText] = useState('')
   const [sending, setSending] = useState(false)
@@ -155,18 +153,6 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
       <p className="text-[11px] text-slate-400 dark:text-slate-500">
         แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
       </p>
-
-      {attachmentUrl && (
-        <a
-          href={attachmentUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-        >
-          <Paperclip size={12} />
-          ดูไฟล์แนบ
-        </a>
-      )}
 
       <div className="border-t border-slate-100 pt-3 dark:border-slate-800">
         <div className="space-y-3">

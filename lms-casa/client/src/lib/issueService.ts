@@ -79,8 +79,6 @@ export interface MyIssue {
   statusLabel: string;
   createdAt: string;
   page: string | null;
-  hasAttachment: boolean;
-  attachmentUrl: string | null;
   history: IssueHistoryEntry[];
   category: Category;
   categoryLabel: string;
@@ -95,15 +93,6 @@ export async function fetchMyIssues(reporterId: string): Promise<MyIssue[]> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'โหลดประวัติการแจ้งปัญหาไม่สำเร็จ');
   return body.issues;
-}
-
-// issue-service gates the raw attachment behind ?system=&reporterId= (same
-// soft-trust tier as GET /mine) — build the authenticated download link here
-// so callers don't have to know the query-param contract.
-export function getAttachmentDownloadUrl(issue: MyIssue, reporterId: string): string | null {
-  if (!issue.attachmentUrl) return null;
-  const params = new URLSearchParams({ system: 'lms-casa', reporterId });
-  return `${BASE_URL}${issue.attachmentUrl}?${params.toString()}`;
 }
 
 export async function postIssueComment(issueId: string, reporterId: string, message: string): Promise<IssueComment[]> {

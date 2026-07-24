@@ -7,7 +7,6 @@ import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import {
   fetchMyIssues,
-  getAttachmentDownloadUrl,
   postIssueComment,
   submitIssueReport,
   type Category,
@@ -102,7 +101,6 @@ function IssueDetail({
   t: (key: string) => string;
   onBack: () => void;
 }) {
-  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
   const [comments, setComments] = useState(issue.comments);
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
@@ -156,17 +154,6 @@ function IssueDetail({
         {t("bugReport.reportedAt")} {fmt(issue.createdAt)}
       </p>
 
-      {attachmentUrl && (
-        <a
-          href={attachmentUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline"
-        >
-          <Icon name="file" size={12} />
-          {t("bugReport.viewAttachment")}
-        </a>
-      )}
 
       <div className="border-t border-line pt-3">
         <div className="space-y-3">

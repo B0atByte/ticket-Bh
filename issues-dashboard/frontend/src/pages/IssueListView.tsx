@@ -8,7 +8,6 @@ import {
   SEVERITY_KEYS,
   STATUS_KEYS,
   badgeClass,
-  categoryColor,
   categoryKey,
   formatTime,
   isToday,
@@ -192,9 +191,7 @@ export default function IssueListView({
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${SEVERITY_COLORS[issue.severity]}`}>
                   {t(SEVERITY_KEYS[issue.severity])}
                 </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor(issue.category)}`}>
-                  {t(categoryKey(issue.category))}
-                </span>
+                <span className="text-xs font-medium text-slate-500">#{t(categoryKey(issue.category))}</span>
                 <span className="ml-auto text-xs text-slate-400">{formatTime(issue.createdAt, lang)}</span>
               </div>
               <p className="mb-1 text-sm font-semibold text-slate-900">{issue.subject || issue.description}</p>

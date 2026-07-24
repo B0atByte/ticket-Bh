@@ -38,6 +38,8 @@ const DICT: Record<string, Entry> = {
   'analytics.na': { th: 'ไม่มีข้อมูล', en: 'N/A' },
 
   'analytics.issuesBySystem': { th: 'ปัญหาแยกตามระบบ', en: 'Issues by system' },
+  'analytics.topPages': { th: 'หน้าที่ถูกแจ้งปัญหาบ่อยที่สุด', en: 'Most reported pages' },
+  'analytics.categoryBySystem': { th: 'หมวดหมู่ปัญหาแยกตามระบบ', en: 'Issue categories by system' },
   'analytics.trend': { th: 'แนวโน้มปัญหาที่แจ้งเข้ามา', en: 'Issue trend' },
   'analytics.noData': { th: 'ยังไม่มีข้อมูลในช่วงนี้', en: 'No data in this period' },
   'analytics.loading': { th: 'กำลังโหลดข้อมูลวิเคราะห์...', en: 'Loading analytics...' },
@@ -89,8 +91,6 @@ const DICT: Record<string, Entry> = {
   'detail.contact': { th: 'ช่องทางติดต่อกลับ', en: 'Contact info' },
   'detail.device': { th: 'อุปกรณ์ / เบราว์เซอร์', en: 'Device / browser' },
   'detail.appVersion': { th: 'เวอร์ชันแอป', en: 'App version' },
-  'detail.attachment': { th: 'ไฟล์แนบ', en: 'Attachment' },
-  'detail.viewAttachment': { th: 'ดูไฟล์แนบ', en: 'View attachment' },
   'detail.timeline': { th: 'ไทม์ไลน์', en: 'Timeline' },
   'detail.updateStatus': { th: 'อัปเดตสถานะ', en: 'Update status' },
   'detail.noteLabel': { th: 'หมายเหตุถึงผู้แจ้ง (ไม่บังคับ)', en: "Note to reporter (optional)" },

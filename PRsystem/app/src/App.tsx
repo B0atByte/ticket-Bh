@@ -7,14 +7,14 @@ import {
   Shield, KeyRound, UserPlus, BarChart2,
   FileCheck, Send, Banknote, History, RefreshCw, Menu, Package,
   Download, Filter, CalendarDays, MessageSquare, ChevronLeft,
-  ExternalLink, MapPin, Image, Bug, Loader2, ArrowLeft, Paperclip
+  ExternalLink, MapPin, Image, Bug, Loader2, ArrowLeft
 } from 'lucide-react';
 import {
   ROLE_LABELS, ROLE_COLORS, STATUS_LABELS, STATUS_COLORS, CATEGORIES,
   type User, type PurchaseRequest, type PurchaseItem, type AuditLog, type Role
 } from './data';
 import { api } from './lib/api';
-import { fetchMyIssues, getAttachmentDownloadUrl, postIssueComment, submitIssueReport, type Category, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
+import { fetchMyIssues, postIssueComment, submitIssueReport, type Category, type IssueStatus, type MyIssue, type Severity } from './lib/issueService';
 import './index.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -844,7 +844,6 @@ function IssueHistoryCard({ issue, onViewMore }: { issue: MyIssue; onViewMore: (
 function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId: string; onBack: () => void }) {
   const sev = SEVERITY_OPTIONS.find(s => s.value === issue.severity);
   const cat = ISSUE_CATEGORY_OPTIONS.find(c => c.value === issue.category);
-  const attachmentUrl = getAttachmentDownloadUrl(issue, reporterId);
   const [comments, setComments] = useState(issue.comments);
   const [commentText, setCommentText] = useState('');
   const [sending, setSending] = useState(false);
@@ -896,14 +895,6 @@ function IssueDetail({ issue, reporterId, onBack }: { issue: MyIssue; reporterId
       <p className="text-[11px] text-slate-400 dark:text-slate-500">
         แจ้งเมื่อ {new Date(issue.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
       </p>
-
-      {attachmentUrl && (
-        <a href={attachmentUrl} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400">
-          <Paperclip size={12} />
-          ดูไฟล์แนบ
-        </a>
-      )}
 
       <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
         <div className="space-y-3">

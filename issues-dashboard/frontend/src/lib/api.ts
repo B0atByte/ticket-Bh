@@ -59,8 +59,6 @@ export interface Comment {
 
 export interface IssueDetail extends Issue {
   reporterId: string
-  hasAttachment: boolean
-  attachmentUrl: string | null
   history: HistoryEntry[]
   comments: Comment[]
 }
@@ -129,22 +127,4 @@ export function postComment(issueId: string, message: string) {
     method: 'POST',
     body: JSON.stringify({ message }),
   })
-}
-
-// Attachments need the Bearer token attached, which a plain <a href> can't
-// do — fetch the blob here and let the caller open it via an object URL.
-export async function openAttachment(issueId: string): Promise<void> {
-  const token = getToken()
-  const res = await fetch(`/api/issues/${encodeURIComponent(issueId)}/attachment`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
-  if (res.status === 401) {
-    clearToken()
-    throw new Error('Unauthorized')
-  }
-  if (!res.ok) throw new Error('Failed to load attachment')
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
-  window.open(url, '_blank', 'noopener,noreferrer')
-  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

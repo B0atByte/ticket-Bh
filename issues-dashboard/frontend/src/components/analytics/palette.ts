@@ -11,6 +11,16 @@ export function systemColor(system: string): string {
   return SLOTS[idx >= 0 ? idx : SLOTS.length - 1]
 }
 
+// Same 5-hue validated set as SYSTEM_ORDER, reused for a different dimension
+// (category, not system) — each chart carries its own legend/direct labels,
+// so the two dimensions never need to share a color meaning.
+export const CATEGORY_ORDER = ['system_error', 'payment', 'account', 'feedback', 'other'] as const
+
+export function categoryColor(category: string): string {
+  const idx = CATEGORY_ORDER.indexOf(category as (typeof CATEGORY_ORDER)[number])
+  return SLOTS[idx >= 0 ? idx : SLOTS.length - 1]
+}
+
 // Sequential default hue (blue) — single-series trend line.
 export const TREND_COLOR = '#2a78d6'
 

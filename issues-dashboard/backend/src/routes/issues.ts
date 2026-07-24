@@ -75,24 +75,6 @@ router.get('/:issueId', async (c) => {
   return c.json(body)
 })
 
-// GET /:issueId/attachment — streams the attachment through with the
-// dashboard's X-Dashboard-Key attached server-side. Needed because a plain
-// <a href> from the browser can't carry either that key or this dashboard's
-// own Bearer token, and issue-service's attachment endpoint requires one.
-router.get('/:issueId/attachment', async (c) => {
-  const { issueId } = c.req.param()
-  const res = await fetch(`${process.env.ISSUE_SERVICE_URL}/api/issues/${issueId}/attachment`, {
-    headers: { 'X-Dashboard-Key': process.env.ISSUE_SERVICE_DASHBOARD_KEY ?? '' },
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    return c.json({ error: body.error ?? 'Not found' }, res.status === 404 ? 404 : 400)
-  }
-  const contentType = res.headers.get('Content-Type') ?? 'application/octet-stream'
-  const buffer = await res.arrayBuffer()
-  return c.body(buffer, 200, { 'Content-Type': contentType })
-})
-
 const createCommentSchema = z.object({
   message: z.string().min(1, 'กรุณาพิมพ์ข้อความ').max(2000),
 })
